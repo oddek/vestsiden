@@ -1,0 +1,5 @@
+config/
+config/*
+sql/Makefile
+test/test
+test/test.o
