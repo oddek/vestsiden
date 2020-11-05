@@ -3,3 +3,7 @@ config/*
 sql/Makefile
 test/test
 test/test.o
+query/query.o
+query/query
+docs/
+docs*
