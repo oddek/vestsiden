@@ -136,10 +136,6 @@ int main()
 //Insert vector of CleanEntries into clean database
 bool insertCleanData(sql::Connection* cleanCon, std::vector<Entry> data)
 {
-	for(auto c : data)
-	{
-		std::cout << "Sensor: " << c.sensorName << "\n";
-	}
 	sql::PreparedStatement* prep_stmt;
 
 	for(auto c : data)
@@ -172,7 +168,7 @@ bool insertCleanData(sql::Connection* cleanCon, std::vector<Entry> data)
 std::vector<Entry> getLatestDirtyData(sql::Connection* dirtyCon, uint64_t timestampLowerLimit, uint64_t timestampUpperLimit)
 {
 	//Gjetning
-	const unsigned int maxNumOfRows = 10;
+	const unsigned int maxNumOfRows = 500;
 	static unsigned int currentRowOffset = 0;
 
     std::vector<Entry> newData;
