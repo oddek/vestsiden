@@ -46,8 +46,8 @@ int main()
 	std::streambuf* coutbuf = std::cout.rdbuf();
 	std::cout.rdbuf(out.rdbuf());
 	//HUSK OG FJERNE DISSE FØR KJØRING!!!
-	std::cout.rdbuf(coutbuf);
-	return 0;
+	/* std::cout.rdbuf(coutbuf); */
+	/* return 0; */
 
 	//Init connectionstrings
 	std::string sourceConnectionString = "tcp://" + sourceDbHostNameV6 + ":" + sourceDbPort;
@@ -69,7 +69,10 @@ int main()
 
 
 		uint64_t lowerTime = 1000;
-		uint64_t upperTime = 1581845760000;
+		/* uint64_t upperTime = 1581845760000; */
+
+		/* uint64_t upperTime = 1581845640000; */
+		uint64_t upperTime = 1588330587000;
 		int numberOfRowsInClean = getTotalCount(cleanConnection);
 		int numberOfRowsInDirty = getCountUpToSeconds(dirtyConnection, lowerTime, upperTime);
 

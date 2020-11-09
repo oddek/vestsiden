@@ -1,0 +1,55 @@
+Connecting to databases..
+tcp://[2001:700:1B00:2C::18]:3306
+Databases connected
+Total number of rows in clean DB:
+	16536
+Rows between 1000, 1581845760000 in dirtyDb:
+	122
+Status field Maxvalue: -1755468688
+Status field Minvalue: 1297375088
+Done, cleaning up..
+Clean exit
+Connecting to databases..
+tcp://[2001:700:1B00:2C::18]:3306
+Databases connected
+Total number of rows in clean DB:
+	55
+Rows between 1000, 1581845640000 in dirtyDb:
+	55
+Status field Maxvalue: -1732128679
+Status field Minvalue: 1297375088
+Done, cleaning up..
+Clean exit
+Connecting to databases..
+tcp://[2001:700:1B00:2C::18]:3306
+Databases connected
+Total number of rows in clean DB:
+	55
+Rows between 1000, 1581845760000 in dirtyDb:
+	122
+Status field Maxvalue: -1732008691
+Status field Minvalue: 1297375088
+Done, cleaning up..
+Clean exit
+Connecting to databases..
+tcp://[2001:700:1B00:2C::18]:3306
+Databases connected
+Total number of rows in clean DB:
+	122
+Rows between 1000, 1581845760000 in dirtyDb:
+	122
+Status field Maxvalue: -1731888699
+Status field Minvalue: 1297375088
+Done, cleaning up..
+Clean exit
+Connecting to databases..
+tcp://[2001:700:1B00:2C::18]:3306
+Databases connected
+Total number of rows in clean DB:
+	122
+Rows between 1000, 1588330587000 in dirtyDb:
+	159579069
+Status field Maxvalue: -1729428691
+Status field Minvalue: 1297375088
+Done, cleaning up..
+Clean exit

@@ -10,11 +10,12 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <map>
 #include <chrono>
 #include <ctime>
 #include <iomanip>
 #include <sstream>
-
+#include <fstream>
 
 
 
@@ -33,6 +34,8 @@ struct SensorEntry
 	std::string name;
 	std::string valuefacet;
 };
+
+
 
 double round(double d);
 
@@ -58,9 +61,18 @@ bool insertCleanData(sql::Connection* cleanCon, std::vector<Entry> data);
 uint64_t getEpochUpperLimit();
 
 
+std::map<std::string, int> getSensors(sql::Connection* cleanCon);
 
 int main()
 {
+	//Redirect cout to file
+	std::ofstream out("out.txt", std::fstream::app);
+	std::streambuf* coutbuf = std::cout.rdbuf();
+	std::cout.rdbuf(out.rdbuf());
+    auto start = std::chrono::system_clock::now();
+	std::time_t start_time = std::chrono::system_clock::to_time_t(start);
+
+	std::cout << "\n\nLog insert. Time: " << std::ctime(&start_time) << "\n";
 	//Init connectionstrings
 	std::string sourceConnectionString = "tcp://" + sourceDbHostNameV6 + ":" + sourceDbPort;
 	std::string destConnectionString = "tcp://" + destDbHostNameV6 + ":" + destDbPort;
@@ -91,13 +103,17 @@ int main()
 		std::cout << "Got lower limit for select:\n";
 		printTimeFromSeconds(selectLowerLimit);
 
-
 		/* uint64_t selectUpperLimit = 1581845640000; //getEpochUpperLimit(); */
 		/* uint64_t selectUpperLimit = 1581845760000; //getEpochUpperLimit(); */
 		uint64_t selectUpperLimit = 1588330587000; //getEpochUpperLimit();
 		std::cout << "Got upper limit for select:\n";
 		printTimeFromSeconds(selectUpperLimit);
 		std::cout << "Will update db, with\n\tLower limit: " << selectLowerLimit << "\n\tUpper limit: " << selectUpperLimit << "\n";
+
+
+
+
+		std::cout << "Got sensors..";
 
 		//While there still is new data in the dirty database
 		while(true)
@@ -125,50 +141,111 @@ int main()
 	    std::cout << "# ERR: " << e.what();
 	    std::cout << " (MySQL error code: " << e.getErrorCode();
 	    std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+		std::cout << "Exit on error";
+		std::cout.rdbuf(coutbuf);
+		return -1;
 	}
 	std::cout << "Clean exit\n";
+	std::cout.rdbuf(coutbuf);
 	return 0;
-
-
-  return 0;
 }
 
-//Insert vector of CleanEntries into clean database
+std::map<std::string, int> getSensors(sql::Connection* cleanCon)
+{
+	sql::Statement* stmt;
+
+	sql::ResultSet* res;
+	stmt = cleanCon->createStatement();
+	std::string query = "SELECT `ID`, `NAME` FROM `HISTORY_TYPE_MAP`";
+	res = stmt->executeQuery(query);
+
+	std::map<std::string, int> sensors;
+	while(res->next())
+	{
+		int id = res->getInt("ID");
+		std::string name = res->getString("NAME");
+
+		sensors.insert(std::pair<std::string, int>(name, id));
+	}
+
+	delete stmt;
+	return sensors;
+}
+
 bool insertCleanData(sql::Connection* cleanCon, std::vector<Entry> data)
 {
-	sql::PreparedStatement* prep_stmt;
+
+	auto sensors = getSensors(cleanCon);
+
+
+
+	sql::Statement* stmt;
+	stmt = cleanCon->createStatement();
+	std::string query = "";
+	query += "INSERT INTO `HISTORYNUMERICTRENDRECORD` ";
+	query += "(`TIMESTAMP`, `VALUE`, `HISTORY_ID`, `STATUS`) ";
+	query += "VALUES ";
+
 
 	for(auto c : data)
 	{
-		prep_stmt = cleanCon->prepareStatement
-		(
-			"INSERT INTO `HISTORYNUMERICTRENDRECORD` "
-				"( "
-					"`TIMESTAMP`, "
-					"`VALUE`, "
-					"`HISTORY_ID`, "
-					"`STATUS` "
-				") "
-			"VALUES "
-				"(?, ?, (SELECT `ID` FROM HISTORY_TYPE_MAP WHERE `NAME` = ?), ?) "
-		);
 
-		prep_stmt->setUInt(1, millis_to_seconds(c.timestamp));
-		prep_stmt->setDouble(2, round(c.value));
-		prep_stmt->setString(3, c.sensorName);
-		prep_stmt->setInt(4, c.status);
-		prep_stmt->execute();
+		int sensorId = sensors.at(c.sensorName);
+
+
+
+		query += "(";
+		query += std::to_string(millis_to_seconds(c.timestamp)) + ", ";
+		query += std::to_string(round(c.value)) + ", ";
+		query += std::to_string(sensorId) + ", ";
+		query += std::to_string(c.status);
+		query += "), ";
 	}
 
-	delete prep_stmt;
+	query.erase(query.length()-2);
+	/* std::cout << query << "\n"; */
+
+	stmt->execute(query);
+	delete stmt;
 	return true;
 }
+//Insert vector of CleanEntries into clean database
+/* bool insertCleanData(sql::Connection* cleanCon, std::vector<Entry> data) */
+/* { */
+/* 	for(auto c : data) */
+/* 	{ */
+/* 		sql::PreparedStatement* prep_stmt; */
+
+/* 		prep_stmt = cleanCon->prepareStatement */
+/* 		( */
+/* 			"INSERT INTO `HISTORYNUMERICTRENDRECORD` " */
+/* 				"( " */
+/* 					"`TIMESTAMP`, " */
+/* 					"`VALUE`, " */
+/* 					"`HISTORY_ID`, " */
+/* 					"`STATUS` " */
+/* 				") " */
+/* 			"VALUES " */
+/* 				"(?, ?, (SELECT `ID` FROM HISTORY_TYPE_MAP WHERE `NAME` = ?), ?) " */
+/* 		); */
+
+/* 		prep_stmt->setUInt(1, millis_to_seconds(c.timestamp)); */
+/* 		prep_stmt->setDouble(2, round(c.value)); */
+/* 		prep_stmt->setString(3, c.sensorName); */
+/* 		prep_stmt->setInt(4, c.status); */
+/* 		prep_stmt->execute(); */
+
+/* 		delete prep_stmt; */
+/* 	} */
+
+/* 	return true; */
+/* } */
 
 
 std::vector<Entry> getLatestDirtyData(sql::Connection* dirtyCon, uint64_t timestampLowerLimit, uint64_t timestampUpperLimit)
 {
 	//Gjetning
-	const unsigned int maxNumOfRows = 500;
+	const unsigned int maxNumOfRows = 500000;
 	static unsigned int currentRowOffset = 0;
 
     std::vector<Entry> newData;
@@ -211,8 +288,6 @@ std::vector<Entry> getLatestDirtyData(sql::Connection* dirtyCon, uint64_t timest
 
     return newData;
 }
-
-
 
 //TESTED, WORKS!
 void fillSensorTable(sql::Connection* dirtyCon, sql::Connection* cleanCon)
