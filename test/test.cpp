@@ -150,6 +150,46 @@ int main()
 	return 0;
 }
 
+void createLoadFile(sql::Connection* dirtyCon, sql::Connection* cleanCon, uint64_t selectLowerLimit, uint64_t selectUpperLimit)
+{
+
+	std::ofstream file;
+	file.open("loadfile.csv");
+	file << "TIMESTAMP,VALUE,HISTORY_ID,STATUS\n"
+
+	while(true)
+	{
+
+		//Get X amount of data.
+		std::cout << "Fetching data..\n";
+		auto data = getLatestDirtyData(dirtyCon, selectLowerLimit, selectUpperLimit);
+		//If there isn't any more new data, we are done
+		if(data.empty()) break;
+		//Insert clean data into database.
+		std::cout << "Inserting data..\n";
+
+
+		auto sensors = getSensors(cleanCon);
+
+		for(auto c : data)
+		{
+
+			int sensorId = sensors.at(c.sensorName);
+
+
+			file <<
+
+			query += "(";
+			query += std::to_string(millis_to_seconds(c.timestamp)) + ", ";
+			query += std::to_string(round(c.value)) + ", ";
+			query += std::to_string(sensorId) + ", ";
+			query += std::to_string(c.status);
+			query += "), ";
+		}
+
+	}
+}
+
 std::map<std::string, int> getSensors(sql::Connection* cleanCon)
 {
 	sql::Statement* stmt;
