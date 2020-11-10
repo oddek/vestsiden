@@ -37,6 +37,11 @@ struct SensorEntry
 
 
 
+void insertFromFile(sql::Connection* cleanCon, std::string filename);
+
+
+void createLoadFile(sql::Connection* dirtyCon, sql::Connection* cleanCon, uint64_t selectLowerLimit, uint64_t selectUpperLimit, std::string filename);
+
 double round(double d);
 
 uint64_t millis_to_seconds(uint64_t i);
@@ -65,6 +70,10 @@ std::map<std::string, int> getSensors(sql::Connection* cleanCon);
 
 int main()
 {
+
+	std::string csvFilename = "loadfile.csv";
+
+
 	//Redirect cout to file
 	std::ofstream out("out.txt", std::fstream::app);
 	std::streambuf* coutbuf = std::cout.rdbuf();
@@ -150,44 +159,84 @@ int main()
 	return 0;
 }
 
-void createLoadFile(sql::Connection* dirtyCon, sql::Connection* cleanCon, uint64_t selectLowerLimit, uint64_t selectUpperLimit)
+void insertFromFile(sql::Connection* cleanCon, std::string filename)
 {
+	sql::PreparedStatement* stmt;
+
+	stmt = cleanCon->prepareStatement
+	(
+		"LOAD DATA INFILE ? INTO TABLE "
+			"HISTORYNUMERICTRENDRECORD "
+		"FIELDS TERMINATED BY ',' "
+			"IGNORE 1 LINES "
+		"(TIMESTAMP, VALUE, HISTORY_ID, STATUS)"
+	);
+
+
+	stmt->setString(1, filename);
+
+	stmt->execute();
+
+	delete stmt;
+}
+
+void createLoadFile(sql::Connection* dirtyCon, sql::Connection* cleanCon, uint64_t selectLowerLimit, uint64_t selectUpperLimit, std::string filename)
+{
+	auto sensors = getSensors(cleanCon);
 
 	std::ofstream file;
-	file.open("loadfile.csv");
-	file << "TIMESTAMP,VALUE,HISTORY_ID,STATUS\n"
+	file.open(filename);
+	file << "TIMESTAMP,VALUE,HISTORY_ID,STATUS\n";
 
-	while(true)
+	//Gjetning
+	const unsigned int maxNumOfRows = 50000000;
+	static unsigned int currentRowOffset = 0;
+
+    std::vector<Entry> newData;
+	sql::ResultSet* res;
+    sql::PreparedStatement* stmt;
+
+	stmt = dirtyCon->prepareStatement
+	(
+		"SELECT `TIMESTAMP`, `VALUE`, `HISTORY_ID`, `STATUS` FROM "
+			"HISTORYNUMERICTRENDRECORD "
+		"WHERE "
+			"`TIMESTAMP` >= (?) AND `TIMESTAMP` < (?) "
+		"ORDER BY `TIMESTAMP` ASC LIMIT ?, ? "
+	);
+
+
+	stmt->setUInt64(1, selectLowerLimit);
+	stmt->setUInt64(2, selectUpperLimit);
+	stmt->setUInt(3, currentRowOffset);
+	stmt->setUInt(4, maxNumOfRows);
+
+	res = stmt->executeQuery();
+
+	while(res->next())
 	{
 
-		//Get X amount of data.
-		std::cout << "Fetching data..\n";
-		auto data = getLatestDirtyData(dirtyCon, selectLowerLimit, selectUpperLimit);
-		//If there isn't any more new data, we are done
-		if(data.empty()) break;
-		//Insert clean data into database.
-		std::cout << "Inserting data..\n";
+
+		uin64_t timestamp = res->getUInt64("TIMESTAMP");
+		double value = res->getDouble("VALUE");
+		std::string sensorName = res->getString("HISTORY_ID");
+		int status = res->getInt("STATUS");
+		int sensorId = sensors.at(sensorName);
+		//cp file insert here!!
 
 
-		auto sensors = getSensors(cleanCon);
+		file << millis_to_seconds(timestamp) << ",";
+		file << round(value) << ",";
+		file << sensorId << ",";
+		file << status << "\n";
 
-		for(auto c : data)
-		{
-
-			int sensorId = sensors.at(c.sensorName);
-
-
-			file <<
-
-			query += "(";
-			query += std::to_string(millis_to_seconds(c.timestamp)) + ", ";
-			query += std::to_string(round(c.value)) + ", ";
-			query += std::to_string(sensorId) + ", ";
-			query += std::to_string(c.status);
-			query += "), ";
-		}
 
 	}
+
+	delete res;
+	delete stmt;
+
+	file.close();
 }
 
 std::map<std::string, int> getSensors(sql::Connection* cleanCon)
@@ -249,38 +298,6 @@ bool insertCleanData(sql::Connection* cleanCon, std::vector<Entry> data)
 	delete stmt;
 	return true;
 }
-//Insert vector of CleanEntries into clean database
-/* bool insertCleanData(sql::Connection* cleanCon, std::vector<Entry> data) */
-/* { */
-/* 	for(auto c : data) */
-/* 	{ */
-/* 		sql::PreparedStatement* prep_stmt; */
-
-/* 		prep_stmt = cleanCon->prepareStatement */
-/* 		( */
-/* 			"INSERT INTO `HISTORYNUMERICTRENDRECORD` " */
-/* 				"( " */
-/* 					"`TIMESTAMP`, " */
-/* 					"`VALUE`, " */
-/* 					"`HISTORY_ID`, " */
-/* 					"`STATUS` " */
-/* 				") " */
-/* 			"VALUES " */
-/* 				"(?, ?, (SELECT `ID` FROM HISTORY_TYPE_MAP WHERE `NAME` = ?), ?) " */
-/* 		); */
-
-/* 		prep_stmt->setUInt(1, millis_to_seconds(c.timestamp)); */
-/* 		prep_stmt->setDouble(2, round(c.value)); */
-/* 		prep_stmt->setString(3, c.sensorName); */
-/* 		prep_stmt->setInt(4, c.status); */
-/* 		prep_stmt->execute(); */
-
-/* 		delete prep_stmt; */
-/* 	} */
-
-/* 	return true; */
-/* } */
-
 
 std::vector<Entry> getLatestDirtyData(sql::Connection* dirtyCon, uint64_t timestampLowerLimit, uint64_t timestampUpperLimit)
 {
@@ -337,20 +354,6 @@ void fillSensorTable(sql::Connection* dirtyCon, sql::Connection* cleanCon)
 	sql::Statement* stmt;
 	sql::ResultSet* res;
 	sql::PreparedStatement* prep_stmt;
-
-	//Check status max value
-	/* stmt = dirtyCon->createStatement(); */
-	/* std::string query1 = "SELECT MAX(STATUS) as 'MAXSTATUS' FROM HISTORYNUMERICTRENDRECORD"; */
-	/* res = stmt->executeQuery(query1); */
-	/* res->next(); */
-	/* std::cout << "status max value: " << res->getInt("MAXSTATUS") << "\n"; */
-
-	/* //Check status low value */
-	/* stmt = dirtyCon->createStatement(); */
-	/* std::string query2 = "SELECT MIN(STATUS) as 'MINSTATUS' FROM HISTORYNUMERICTRENDRECORD"; */
-	/* res = stmt->executeQuery(query2); */
-	/* res->next(); */
-	/* std::cout << "status min value: " << res->getInt("MAXSTATUS") << "\n"; */
 
 	//Get count of sensors from dirtyDb
 	stmt = dirtyCon->createStatement();
