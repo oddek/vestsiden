@@ -1,2 +1,2 @@
 all:
-	mysql -t -u 'databasebruker' -pMittPassordPaa100visAvTegn! < postFill.sql
+	mysql -t -u 'databasebruker' -pMittPassordPaa100visAvTegn! < fill.sql

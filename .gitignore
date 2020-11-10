@@ -3,6 +3,7 @@ config/*
 sql/Makefile
 test/test
 test/test.o
+test/loadfile.csv
 query/query.o
 query/query
 docs/

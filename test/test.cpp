@@ -75,16 +75,16 @@ int main()
 
 
 	//Redirect cout to file
-	std::ofstream out("out.txt", std::fstream::app);
-	std::streambuf* coutbuf = std::cout.rdbuf();
-	std::cout.rdbuf(out.rdbuf());
+	/* std::ofstream out("out.txt", std::fstream::app); */
+	/* std::streambuf* coutbuf = std::cout.rdbuf(); */
+	/* std::cout.rdbuf(out.rdbuf()); */
     auto start = std::chrono::system_clock::now();
 	std::time_t start_time = std::chrono::system_clock::to_time_t(start);
 
 	std::cout << "\n\nLog insert. Time: " << std::ctime(&start_time) << "\n";
 	//Init connectionstrings
 	std::string sourceConnectionString = "tcp://" + sourceDbHostNameV6 + ":" + sourceDbPort;
-	std::string destConnectionString = "tcp://" + destDbHostNameV6 + ":" + destDbPort;
+	std::string destConnectionString = "tcp://" + destDbHostNameV6 + ":" + destDbPort + " --local_infile=1";
 	try
 	{
 		std::cout << "Connecting to databases..\n";
@@ -120,7 +120,11 @@ int main()
 		std::cout << "Will update db, with\n\tLower limit: " << selectLowerLimit << "\n\tUpper limit: " << selectUpperLimit << "\n";
 
 
+		createLoadFile(dirtyConnection, cleanConnection, selectLowerLimit, selectUpperLimit, csvFilename);
 
+		std::cout << "Created load file, about to insert it..\n";
+		insertFromFile(cleanConnection, csvFilename);
+		return 0;
 
 		std::cout << "Got sensors..";
 
@@ -151,33 +155,36 @@ int main()
 	    std::cout << " (MySQL error code: " << e.getErrorCode();
 	    std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
 		std::cout << "Exit on error";
-		std::cout.rdbuf(coutbuf);
+		/* std::cout.rdbuf(coutbuf); */
 		return -1;
 	}
 	std::cout << "Clean exit\n";
-	std::cout.rdbuf(coutbuf);
+	/* std::cout.rdbuf(coutbuf); */
 	return 0;
 }
 
 void insertFromFile(sql::Connection* cleanCon, std::string filename)
 {
-	sql::PreparedStatement* stmt;
+	std::string path = "/home/bruker/vestsiden/test/";
+	sql::Statement* stmt;
 
-	stmt = cleanCon->prepareStatement
-	(
-		"LOAD DATA INFILE ? INTO TABLE "
-			"HISTORYNUMERICTRENDRECORD "
-		"FIELDS TERMINATED BY ',' "
-			"IGNORE 1 LINES "
-		"(TIMESTAMP, VALUE, HISTORY_ID, STATUS)"
-	);
+	stmt = cleanCon->createStatement();
+	std::string query = "";
+	query += "LOAD DATA LOCAL INFILE '" + path + filename + "' INTO TABLE ";
+	query += "HISTORYNUMERICTRENDRECORD ";
+	query += "FIELDS TERMINATED BY ',' ";
+	query += "IGNORE 1 LINES ";
+	query += "(TIMESTAMP, VALUE, HISTORY_ID, STATUS)";
 
 
-	stmt->setString(1, filename);
+	std::cout << "query: " << query << "\n";
 
-	stmt->execute();
+	std::cout << "created query, about to execute..\n";
+	stmt->execute(query);
 
+	std::cout << "Query executed\n";
 	delete stmt;
+	std::cout << "Deleted stmt\n";
 }
 
 void createLoadFile(sql::Connection* dirtyCon, sql::Connection* cleanCon, uint64_t selectLowerLimit, uint64_t selectUpperLimit, std::string filename)
@@ -185,11 +192,11 @@ void createLoadFile(sql::Connection* dirtyCon, sql::Connection* cleanCon, uint64
 	auto sensors = getSensors(cleanCon);
 
 	std::ofstream file;
-	file.open(filename);
+	file.open("loadfile.csv");
 	file << "TIMESTAMP,VALUE,HISTORY_ID,STATUS\n";
 
 	//Gjetning
-	const unsigned int maxNumOfRows = 50000000;
+	const unsigned int maxNumOfRows = 500;
 	static unsigned int currentRowOffset = 0;
 
     std::vector<Entry> newData;
@@ -217,7 +224,7 @@ void createLoadFile(sql::Connection* dirtyCon, sql::Connection* cleanCon, uint64
 	{
 
 
-		uin64_t timestamp = res->getUInt64("TIMESTAMP");
+		uint64_t timestamp = res->getUInt64("TIMESTAMP");
 		double value = res->getDouble("VALUE");
 		std::string sensorName = res->getString("HISTORY_ID");
 		int status = res->getInt("STATUS");
