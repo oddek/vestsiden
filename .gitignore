@@ -10,3 +10,5 @@ docs/
 docs*
 loadfiles/
 loadfiles/*
+fileGen/fileGen
+fileGen/main.o
