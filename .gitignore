@@ -10,5 +10,7 @@ docs/
 docs*
 loadfiles/
 loadfiles/*
-fileGen/fileGen
+readingFileGen/readingFileGen
 fileGen/main.o
+sensorFileGen/sensorFileGen
+sensorFileGen/main.o

@@ -1,4 +1,4 @@
-PROG = fileGen
+PROG = readingFileGen
 CC = g++
 CPPFLAGS = -I /usr/include -L /usr/lib
 OBJS = main.o
