@@ -8,3 +8,5 @@ query/query.o
 query/query
 docs/
 docs*
+loadfiles/
+loadfiles/*
