@@ -8,5 +8,5 @@ mysql --defaults-extra-file=$configPath/newDb.conf -e "
   LOAD DATA LOCAL INFILE '$filePath/sensorsSorted.csv'
   INTO TABLE HISTORYNUMERICTRENDRECORD
   FIELDS TERMINATED BY ','
-  (TIMESTAMP, HISTORY_ID, VALUE, STATUS);"
+  (ID, NAME, VALUEFACETS);"
 

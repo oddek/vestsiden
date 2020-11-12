@@ -6,7 +6,6 @@
 #include <cppconn/prepared_statement.h>
 #include "../config/dbconfig.cpp"
 
-
 #include <string>
 #include <vector>
 #include <iostream>
@@ -17,9 +16,7 @@
 #include <sstream>
 #include <fstream>
 
-
-
-//Data to be read from dirty DB
+//Data structure to hold rows read from dirty DB
 struct Entry
 {
 	uint64_t timestamp;
@@ -28,51 +25,44 @@ struct Entry
 	int status;
 };
 
-//Data to be read from sensor table of dirty DB
-struct SensorEntry
-{
-	std::string name;
-	std::string valuefacet;
-};
+//Returns vector of rows from dirty db
+//Including the lower timestamp, excluding the upper timestamp
+std::vector<Entry> getLatestDirtyData(sql::Connection* dirtyCon, uint64_t timestampLowerLimit, uint64_t timestampUpperLimit);
 
+//Appends data collected to a csv file
+//Sensors in needed for translating human readable sensor names into the key from sensor table
+void insertCleanDataInFile(std::vector<Entry> data, std::string filename, std::map<std::string, int> sensors);
 
+//Returns time 10 minutes ago in millis
+uint64_t getEpochUpperLimit();
+
+//Convert a double to scientific notation. Precision sets total number of digits.
+//Ex: 1.54323e+10
 std::string doubleToScientific(double d, int precision);
-
-void insertCleanDataInFile(sql::Connection* cleanCon, std::vector<Entry> data, std::string filename);
 
 uint64_t millis_to_seconds(uint64_t i);
 
-//Prints time from millis
+//Prints human readable time from millis
 void printTimeFromMillis(uint64_t epochMillis);
 
-//Has to take epoch in seconds!
-void printTimeFromSeconds(uint64_t epoch);
-
-//Returns in seconds, NOT millis
-uint64_t getLastEntryTimestamp(sql::Connection* cleanCon);
-
-std::vector<Entry> getLatestDirtyData(sql::Connection* dirtyCon, uint64_t timestampLowerLimit, uint64_t timestampUpperLimit);
-
-//Returns time 10 minutes ago in SECONDS
-uint64_t getEpochUpperLimit();
-
-
+//Returns map with sensorname and primarykey from sensortable in CLEANDB
 std::map<std::string, int> getSensors(sql::Connection* cleanCon);
 
 int main()
 {
-
 	std::string filename = "../loadfiles/readings.csv";
 
 	//Redirect cout to file
 	/* std::ofstream out("out.txt", std::fstream::app); */
 	/* std::streambuf* coutbuf = std::cout.rdbuf(); */
 	/* std::cout.rdbuf(out.rdbuf()); */
+
+	//Start time for log
     auto start = std::chrono::system_clock::now();
 	std::time_t start_time = std::chrono::system_clock::to_time_t(start);
-
 	std::cout << "\n\nLog insert. Time: " << std::ctime(&start_time) << "\n";
-	//Init connectionstrings
+
+	//Set connectionstrings
 	std::string sourceConnectionString = "tcp://" + sourceDbHostNameV6 + ":" + sourceDbPort;
 	std::string destConnectionString = "tcp://" + destDbHostNameV6 + ":" + destDbPort;
 	try
@@ -85,73 +75,68 @@ int main()
 		sql::Connection* cleanConnection;
 		dirtyConnection = driver->connect(sourceConnectionString, sourceDbUsername, sourceDbPassword);
 		cleanConnection = driver->connect(destConnectionString, destDbUsername, destDbPassword);
-		std::cout << "Databases connected\n";
-
 		dirtyConnection->setSchema("vestsiden");
 		cleanConnection->setSchema("vestsiden");
-		//Find the last timestamp registered in the clean database
-		auto lastEntryTime = getLastEntryTimestamp(cleanConnection);
-		std::cout << "Got last entry time:\n";
-		printTimeFromSeconds(lastEntryTime);
+		std::cout << "Databases connected\n";
 
-		/* uint64_t selectLowerLimit = (lastEntryTime + 1) * 1000; */
-		uint64_t selectLowerLimit = 1581845340000;
+		//Earliest sensor reading in dirty db
+		const uint64_t fileInsertLowerLimit = 1581845340000;
 
-		/* uint64_t selectUpperLimit = 1581845640000; //getEpochUpperLimit(); */
-		/* uint64_t selectUpperLimit = 1581845760000; //getEpochUpperLimit(); */
-		uint64_t selectUpperLimit = getEpochUpperLimit() * 1000;
+		//Ten minutes ago at runtime
+		uint64_t fileInsertUpperLimit = getEpochUpperLimit();
 		std::cout << "Got upper limit for select:\n";
-		printTimeFromMillis(selectUpperLimit);
-		std::cout << "Will create csv, with\n\tLower limit: " << selectLowerLimit << "\n\tUpper limit: " << selectUpperLimit << "\n";
+		printTimeFromMillis(fileInsertUpperLimit);
+		std::cout << "Will create csv, with\n\tLower limit: " << fileInsertLowerLimit << "\n\tUpper limit: " << fileInsertUpperLimit << "\n";
 
-
-		uint64_t currentLower = selectLowerLimit;
-
-		uint64_t incrementValue = 20000000;
+		//Dont want to select more than about 500 000 rows at the time, so we need fill the file incrementally
+		uint64_t currentLower = fileInsertLowerLimit;
+		const uint64_t incrementValue = 20000000;
 		uint64_t currentUpper = currentLower + incrementValue;
-
-		if(currentUpper > selectUpperLimit)
+		if(currentUpper > fileInsertUpperLimit)
 		{
-			currentUpper = selectUpperLimit;
+			currentUpper = fileInsertUpperLimit;
 		}
 
+		//Get sensors for translating sensorname to ID
+		auto sensors = getSensors(cleanConnection);
+
+		//Loop until the file has been filled with all rows from dirty db
 		while(true)
 		{
-
-
-
 			auto t1 = std::chrono::high_resolution_clock::now();
-			//Get X amount of data.
 			std::cout << "Fetching data..\n";
 			auto data = getLatestDirtyData(dirtyConnection, currentLower, currentUpper);
+
 			//If there isn't any more new data, we are done
 			if(data.empty())
 			{
 				std::cout << "Data empty\n";
 				break;
 			}
+
 			//Insert clean data into database.
 			std::cout << "Inserting data..\n";
-			insertCleanDataInFile(cleanConnection, data, filename);
-			auto t2 = std::chrono::high_resolution_clock::now();
-			auto duration = std::chrono::duration_cast<std::chrono::seconds>( t2 - t1 ).count();
-			std::cout << duration << "\n";
+			insertCleanDataInFile(data, filename, sensors);
 
+			//Increment timestamps for select
 			currentLower = currentUpper;
 			currentUpper += incrementValue;
 
-			if(currentUpper > selectUpperLimit)
+			//We dont want to read more than what was there ten minutes ago
+			if(currentUpper > fileInsertUpperLimit)
 			{
-				currentUpper = selectUpperLimit;
+				currentUpper = fileInsertUpperLimit;
 			}
 
+			//Print time loop took
+			auto t2 = std::chrono::high_resolution_clock::now();
+			auto duration = std::chrono::duration_cast<std::chrono::seconds>( t2 - t1 ).count();
+			std::cout << duration << "\n";
 		}
-		return 0;
 		//Memory cleanup (not really necessary)
 		std::cout << "Done, cleaning up..\n";
     	delete dirtyConnection;
 		delete cleanConnection;
-
 	}
 	catch(sql::SQLException& e)
 	{
@@ -169,67 +154,24 @@ int main()
 	return 0;
 }
 
-
-void insertCleanDataInFile(sql::Connection* cleanCon, std::vector<Entry> data, std::string filename)
-{
-	auto sensors = getSensors(cleanCon);
-
-	std::ofstream file(filename, std::fstream::app);
-
-	std::cout << "writing to file: " << filename << "\n";
-	std::cout << data.size() << " lines\n";
-    for(auto& c : data)
-    {
-        int sensorId = sensors.at(c.sensorName);
-        file << sensorId << ",";
-        file << millis_to_seconds(c.timestamp) << ",";
-        file << doubleToScientific(c.value, 5) << ",";
-        file << c.status << "\n";
-    }
-    file.close();
-}
-
-
-std::map<std::string, int> getSensors(sql::Connection* cleanCon)
-{
-	sql::Statement* stmt;
-
-	sql::ResultSet* res;
-	stmt = cleanCon->createStatement();
-	std::string query = "SELECT `ID`, `NAME` FROM `HISTORY_TYPE_MAP`";
-	res = stmt->executeQuery(query);
-
-	std::map<std::string, int> sensors;
-	while(res->next())
-	{
-		int id = res->getInt("ID");
-		std::string name = res->getString("NAME");
-
-		sensors.insert(std::pair<std::string, int>(name, id));
-	}
-
-	delete stmt;
-	return sensors;
-}
-
-
 std::vector<Entry> getLatestDirtyData(sql::Connection* dirtyCon, uint64_t timestampLowerLimit, uint64_t timestampUpperLimit)
 {
 	std::cout << "lower: " << timestampLowerLimit << "\n";
 	std::cout << "upper: " << timestampUpperLimit << "\n";
-	//Gjetning
+
     std::vector<Entry> newData;
 	sql::ResultSet* res;
     sql::PreparedStatement* stmt;
 
 	stmt = dirtyCon->prepareStatement
 	(
-		"SELECT `TIMESTAMP`, `VALUE`, `HISTORY_ID`, `STATUS` FROM "
+		"SELECT "
+			"`TIMESTAMP`, `VALUE`, `HISTORY_ID`, `STATUS` "
+		"FROM "
 			"HISTORYNUMERICTRENDRECORD "
 		"WHERE "
 			"`TIMESTAMP` >= (?) AND `TIMESTAMP` < (?) "
 	);
-
 
 	stmt->setUInt64(1, timestampLowerLimit);
 	stmt->setUInt64(2, timestampUpperLimit);
@@ -254,58 +196,65 @@ std::vector<Entry> getLatestDirtyData(sql::Connection* dirtyCon, uint64_t timest
     return newData;
 }
 
-//Returns in seconds, NOT millis
-uint64_t getLastEntryTimestamp(sql::Connection* cleanCon)
+void insertCleanDataInFile(std::vector<Entry> data, std::string filename, std::map<std::string, int> sensors)
+{
+	//Open file in append mode
+	std::ofstream file(filename, std::fstream::app);
+
+	std::cout << "Writing " << data.size() << " lines to file\n";
+
+    for(auto& c : data)
+    {
+		//Find sensor id from sensorname
+        int sensorId = sensors.at(c.sensorName);
+		//Insert to file
+        file << sensorId << ",";
+        file << millis_to_seconds(c.timestamp) << ",";
+        file << doubleToScientific(c.value, 5) << ",";
+        file << c.status << "\n";
+    }
+
+    file.close();
+}
+
+std::map<std::string, int> getSensors(sql::Connection* cleanCon)
 {
 	sql::Statement* stmt;
 	sql::ResultSet* res;
-
 	stmt = cleanCon->createStatement();
-
-	std::string query = "SELECT COALESCE(MAX(TIMESTAMP), 0) as 'LastEntry' FROM HISTORYNUMERICTRENDRECORD";
-
-	//Get highest timestamp in CleanDB;
+	std::string query = "SELECT `ID`, `NAME` FROM `HISTORY_TYPE_MAP`";
 	res = stmt->executeQuery(query);
-	//Init to 1.1.1970:
-	uint64_t lastEntry = 0;
-	//If we got result, overwrite
+
+	std::map<std::string, int> sensors;
 	while(res->next())
 	{
-		std::cout << "Time from db: " << res->getUInt64("LastEntry") <<"\n";
-		lastEntry  = res->getUInt64("LastEntry");
+		int id = res->getInt("ID");
+		std::string name = res->getString("NAME");
+
+		sensors.insert(std::pair<std::string, int>(name, id));
 	}
 
 	delete stmt;
-	delete res;
-	return lastEntry;
+	return sensors;
 }
 
-//Returns time 10 minutes ago in SECONDS
 uint64_t getEpochUpperLimit()
 {
 	//Get time
 	auto t = std::chrono::system_clock::now();
 	//Convert to millis and uint32
-	uint64_t limit = std::chrono::duration_cast<std::chrono::seconds>(t.time_since_epoch()).count();
+	uint64_t limit = std::chrono::duration_cast<std::chrono::milliseconds>(t.time_since_epoch()).count();
 
-	limit -= 10*60;
+	limit -= 10*60*1000;
 
 	return limit;
 }
 
-
-//Has to take epoch in millis
 void printTimeFromMillis(uint64_t epochMillis)
 {
-	printTimeFromSeconds(epochMillis/1000);
-}
+	time_t t = epochMillis/1000;
 
-//Has to take epoch in seconds!
-void printTimeFromSeconds(uint64_t epoch)
-{
-	time_t t = epoch;
-
-	std::cout << "\t" << epoch << "\n\t" << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << "\n";
+	std::cout << "\t" << epochMillis << "\n\t" << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << "\n";
 }
 
 uint64_t millis_to_seconds(uint64_t i)
@@ -321,14 +270,3 @@ std::string doubleToScientific(double d, int precision)
 	s << d;
 	return s.str();
 }
-
-
-
-
-
-
-
-
-
-
-

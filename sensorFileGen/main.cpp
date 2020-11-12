@@ -6,7 +6,6 @@
 #include <cppconn/prepared_statement.h>
 #include "../config/dbconfig.cpp"
 
-
 #include <string>
 #include <vector>
 #include <iostream>
@@ -17,14 +16,10 @@
 #include <sstream>
 #include <fstream>
 
-
-
-
 void createSensorFile(sql::Connection* dirtyCon, std::string filename);
 
 int main()
 {
-
 	std::string filename = "../loadfiles/sensorfile.csv";
 
 	//Init connectionstrings
@@ -38,7 +33,6 @@ int main()
 		sql::Connection* dirtyConnection;
 		dirtyConnection = driver->connect(sourceConnectionString, sourceDbUsername, sourceDbPassword);
 		std::cout << "Databases connected\n";
-
 		dirtyConnection->setSchema("vestsiden");
 
 		std::cout << "Creating sensor file\n";
@@ -46,7 +40,6 @@ int main()
 
 		std::cout << "Done, cleaning up..\n";
     	delete dirtyConnection;
-
 	}
 	catch(sql::SQLException& e)
 	{
@@ -62,15 +55,10 @@ int main()
 	return 0;
 }
 
-
-
-
-//TESTED, WORKS!
 void createSensorFile(sql::Connection* dirtyCon, std::string filename)
 {
 	sql::Statement* stmt;
 	sql::ResultSet* res;
-
 
 	stmt = dirtyCon->createStatement();
 	std::string query = "SELECT `ID`, `ID_`, `VALUEFACETS` FROM `HISTORY_TYPE_MAP`";
@@ -80,14 +68,11 @@ void createSensorFile(sql::Connection* dirtyCon, std::string filename)
 
 	while(res->next())
 	{
-
-        file << res->getUInt("ID") + ",";
-		file << "\"" + res->getString("ID_") + "\"" + ",";
-		file << "\"" + res->getString("VALUEFACETS") + "\"" + ",";
-
+        file << res->getUInt("ID") << ",";
+		file << "\"" + res->getString("ID_") << "\"" << ",";
+		file << "\"" + res->getString("VALUEFACETS") << "\"" << ",";
 	}
 
 	delete stmt;
 	delete res;
 }
-
