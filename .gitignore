@@ -11,6 +11,6 @@ docs*
 loadfiles/
 loadfiles/*
 readingFileGen/readingFileGen
-fileGen/main.o
+readingFileGen/main.o
 sensorFileGen/sensorFileGen
 sensorFileGen/main.o
