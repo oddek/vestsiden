@@ -63,7 +63,6 @@ int main()
 {
 
 	std::string filename = "../loadfiles/readings.csv";
-    return 0;
 
 	//Redirect cout to file
 	/* std::ofstream out("out.txt", std::fstream::app); */
@@ -95,25 +94,57 @@ int main()
 		std::cout << "Got last entry time:\n";
 		printTimeFromSeconds(lastEntryTime);
 
-		uint64_t selectLowerLimit = (lastEntryTime + 1) * 1000;
+		/* uint64_t selectLowerLimit = (lastEntryTime + 1) * 1000; */
+		uint64_t selectLowerLimit = 1581845340000;
 
 		/* uint64_t selectUpperLimit = 1581845640000; //getEpochUpperLimit(); */
-		uint64_t selectUpperLimit = 1581845760000; //getEpochUpperLimit();
-		/* uint64_t selectUpperLimit = 1588330587000; //getEpochUpperLimit(); */
+		/* uint64_t selectUpperLimit = 1581845760000; //getEpochUpperLimit(); */
+		uint64_t selectUpperLimit = getEpochUpperLimit() * 1000;
 		std::cout << "Got upper limit for select:\n";
 		printTimeFromMillis(selectUpperLimit);
 		std::cout << "Will create csv, with\n\tLower limit: " << selectLowerLimit << "\n\tUpper limit: " << selectUpperLimit << "\n";
 
+
+		uint64_t currentLower = selectLowerLimit;
+
+		uint64_t incrementValue = 20000000;
+		uint64_t currentUpper = currentLower + incrementValue;
+
+		if(currentUpper > selectUpperLimit)
+		{
+			currentUpper = selectUpperLimit;
+		}
+
 		while(true)
 		{
+
+
+
+			auto t1 = std::chrono::high_resolution_clock::now();
 			//Get X amount of data.
 			std::cout << "Fetching data..\n";
-			auto data = getLatestDirtyData(dirtyConnection, selectLowerLimit, selectUpperLimit);
+			auto data = getLatestDirtyData(dirtyConnection, currentLower, currentUpper);
 			//If there isn't any more new data, we are done
-			if(data.empty()) break;
+			if(data.empty())
+			{
+				std::cout << "Data empty\n";
+				break;
+			}
 			//Insert clean data into database.
 			std::cout << "Inserting data..\n";
 			insertCleanDataInFile(cleanConnection, data, filename);
+			auto t2 = std::chrono::high_resolution_clock::now();
+			auto duration = std::chrono::duration_cast<std::chrono::seconds>( t2 - t1 ).count();
+			std::cout << duration << "\n";
+
+			currentLower = currentUpper;
+			currentUpper += incrementValue;
+
+			if(currentUpper > selectUpperLimit)
+			{
+				currentUpper = selectUpperLimit;
+			}
+
 		}
 		return 0;
 		//Memory cleanup (not really necessary)
@@ -145,11 +176,13 @@ void insertCleanDataInFile(sql::Connection* cleanCon, std::vector<Entry> data, s
 
 	std::ofstream file(filename, std::fstream::app);
 
+	std::cout << "writing to file: " << filename << "\n";
+	std::cout << data.size() << " lines\n";
     for(auto& c : data)
     {
         int sensorId = sensors.at(c.sensorName);
-        file << millis_to_seconds(c.timestamp) << ",";
         file << sensorId << ",";
+        file << millis_to_seconds(c.timestamp) << ",";
         file << doubleToScientific(c.value, 5) << ",";
         file << c.status << "\n";
     }
@@ -182,10 +215,9 @@ std::map<std::string, int> getSensors(sql::Connection* cleanCon)
 
 std::vector<Entry> getLatestDirtyData(sql::Connection* dirtyCon, uint64_t timestampLowerLimit, uint64_t timestampUpperLimit)
 {
+	std::cout << "lower: " << timestampLowerLimit << "\n";
+	std::cout << "upper: " << timestampUpperLimit << "\n";
 	//Gjetning
-	const unsigned int maxNumOfRows = 500000;
-	static unsigned int currentRowOffset = 0;
-
     std::vector<Entry> newData;
 	sql::ResultSet* res;
     sql::PreparedStatement* stmt;
@@ -196,14 +228,11 @@ std::vector<Entry> getLatestDirtyData(sql::Connection* dirtyCon, uint64_t timest
 			"HISTORYNUMERICTRENDRECORD "
 		"WHERE "
 			"`TIMESTAMP` >= (?) AND `TIMESTAMP` < (?) "
-		"ORDER BY `TIMESTAMP` ASC LIMIT ?, ? "
 	);
 
 
 	stmt->setUInt64(1, timestampLowerLimit);
 	stmt->setUInt64(2, timestampUpperLimit);
-	stmt->setUInt(3, currentRowOffset);
-	stmt->setUInt(4, maxNumOfRows);
 
 	res = stmt->executeQuery();
 
@@ -217,9 +246,7 @@ std::vector<Entry> getLatestDirtyData(sql::Connection* dirtyCon, uint64_t timest
 		newData.push_back(d);
 	}
 
-	std::cout << "Got new data, offset: " << currentRowOffset << "\n";
-
-	currentRowOffset += maxNumOfRows;
+	std::cout << "Got new data\n";
 
 	delete res;
 	delete stmt;

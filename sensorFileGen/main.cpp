@@ -25,9 +25,7 @@ void createSensorFile(sql::Connection* dirtyCon, std::string filename);
 int main()
 {
 
-	std::string filename = "../loadfile/sensorfile.csv";
-
-	return 0;
+	std::string filename = "../loadfiles/sensorfile.csv";
 
 	//Init connectionstrings
 	std::string sourceConnectionString = "tcp://" + sourceDbHostNameV6 + ":" + sourceDbPort;
@@ -83,9 +81,9 @@ void createSensorFile(sql::Connection* dirtyCon, std::string filename)
 	while(res->next())
 	{
 
-        file << res->getInt("ID") + ",";
-		file << res->getString("ID_") + ",";
-		file << res->getString("VALUEFACETS") + ",";
+        file << res->getUInt("ID") + ",";
+		file << "\"" + res->getString("ID_") + "\"" + ",";
+		file << "\"" + res->getString("VALUEFACETS") + "\"" + ",";
 
 	}
 
