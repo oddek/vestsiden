@@ -48,14 +48,16 @@ void printTimeFromMillis(uint64_t epochMillis);
 //Returns map with sensorname and primarykey from sensortable in CLEANDB
 std::map<std::string, int> getSensors(sql::Connection* cleanCon);
 
+int totalLinesWritten = 0;
+
 int main()
 {
-	std::string filename = "../loadfiles/readings.csv";
+	std::string filename = "../loadfiles/readings2.csv";
 
 	//Redirect cout to file
-	/* std::ofstream out("out.txt", std::fstream::app); */
-	/* std::streambuf* coutbuf = std::cout.rdbuf(); */
-	/* std::cout.rdbuf(out.rdbuf()); */
+	std::ofstream out("out.txt", std::fstream::app);
+	std::streambuf* coutbuf = std::cout.rdbuf();
+	std::cout.rdbuf(out.rdbuf());
 
 	//Start time for log
     auto start = std::chrono::system_clock::now();
@@ -84,13 +86,15 @@ int main()
 
 		//Ten minutes ago at runtime
 		uint64_t fileInsertUpperLimit = getEpochUpperLimit();
+		/* uint64_t fileInsertUpperLimit = 1581849340000; */
 		std::cout << "Got upper limit for select:\n";
 		printTimeFromMillis(fileInsertUpperLimit);
 		std::cout << "Will create csv, with\n\tLower limit: " << fileInsertLowerLimit << "\n\tUpper limit: " << fileInsertUpperLimit << "\n";
 
+
 		//Dont want to select more than about 500 000 rows at the time, so we need fill the file incrementally
 		uint64_t currentLower = fileInsertLowerLimit;
-		const uint64_t incrementValue = 20000000;
+		const uint64_t incrementValue = 40000000;
 		uint64_t currentUpper = currentLower + incrementValue;
 		if(currentUpper > fileInsertUpperLimit)
 		{
@@ -101,18 +105,18 @@ int main()
 		auto sensors = getSensors(cleanConnection);
 
 		//Loop until the file has been filled with all rows from dirty db
-		while(true)
+		while(currentLower < fileInsertUpperLimit)
 		{
 			auto t1 = std::chrono::high_resolution_clock::now();
 			std::cout << "Fetching data..\n";
 			auto data = getLatestDirtyData(dirtyConnection, currentLower, currentUpper);
 
 			//If there isn't any more new data, we are done
-			if(data.empty())
-			{
-				std::cout << "Data empty\n";
-				break;
-			}
+			/* if(data.empty()) */
+			/* { */
+			/* 	std::cout << "Data empty\n"; */
+			/* 	break; */
+			/* } */
 
 			//Insert clean data into database.
 			std::cout << "Inserting data..\n";
@@ -132,6 +136,7 @@ int main()
 			auto t2 = std::chrono::high_resolution_clock::now();
 			auto duration = std::chrono::duration_cast<std::chrono::seconds>( t2 - t1 ).count();
 			std::cout << duration << "\n";
+			std::cout << "Total lines written: " << totalLinesWritten << "\n";
 		}
 		//Memory cleanup (not really necessary)
 		std::cout << "Done, cleaning up..\n";
@@ -146,11 +151,15 @@ int main()
 	    std::cout << " (MySQL error code: " << e.getErrorCode();
 	    std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
 		std::cout << "Exit on error";
-		/* std::cout.rdbuf(coutbuf); */
+		std::cout.rdbuf(coutbuf);
 		return -1;
 	}
 	std::cout << "Clean exit\n";
-	/* std::cout.rdbuf(coutbuf); */
+	std::cout.rdbuf(coutbuf);
+
+    start = std::chrono::system_clock::now();
+	start_time = std::chrono::system_clock::to_time_t(start);
+	std::cout << "\n\nProgram finished at: " << std::ctime(&start_time) << "\n";
 	return 0;
 }
 
@@ -203,6 +212,7 @@ void insertCleanDataInFile(std::vector<Entry> data, std::string filename, std::m
 
 	std::cout << "Writing " << data.size() << " lines to file\n";
 
+	totalLinesWritten += data.size();
     for(auto& c : data)
     {
 		//Find sensor id from sensorname

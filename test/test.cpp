@@ -31,6 +31,7 @@ struct Entry
 //Data to be read from sensor table of dirty DB
 struct SensorEntry
 {
+	int id;
 	std::string name;
 	std::string valuefacet;
 };
@@ -101,6 +102,7 @@ int main()
 		cleanConnection->setSchema("vestsiden");
 		//Refill sensor table, in case there are some new sensors added
 		fillSensorTable(dirtyConnection, cleanConnection);
+		return 0;
 		std::cout << "SensorTable filled\n";
 		//Find the last timestamp registered in the clean database
 		auto lastEntryTime = getLastEntryTimestamp(cleanConnection);
@@ -389,12 +391,13 @@ void fillSensorTable(sql::Connection* dirtyCon, sql::Connection* cleanCon)
 	std::cout << "Number of sensors are NOT equal, updating cleanDb..\n";
 
 	stmt = dirtyCon->createStatement();
-	query = "SELECT `ID_`, `VALUEFACETS` FROM `HISTORY_TYPE_MAP`";
+	query = "SELECT `ID`, `ID_`, `VALUEFACETS` FROM `HISTORY_TYPE_MAP`";
 	res = stmt->executeQuery(query);
 
 	while(res->next())
 	{
 		SensorEntry s;
+		s.id = res ->getInt("ID");
 		s.name = res->getString("ID_");
 		s.valuefacet = res->getString("VALUEFACETS");
 
@@ -409,12 +412,13 @@ void fillSensorTable(sql::Connection* dirtyCon, sql::Connection* cleanCon)
 		(
 			"INSERT IGNORE INTO "
 				"`HISTORY_TYPE_MAP`"
-					"(`NAME`, `VALUEFACETS`) "
-				"VALUES (?, ?) "
+					"(`ID`, `NAME`, `VALUEFACETS`) "
+				"VALUES (?, ?, ?) "
 		);
 
-		prep_stmt->setString(1, s.name);
-		prep_stmt->setString(2, s.valuefacet);
+		prep_stmt->setInt(1, s.id);
+		prep_stmt->setString(2, s.name);
+		prep_stmt->setString(3, s.valuefacet);
 
 		prep_stmt->execute();
 	}
