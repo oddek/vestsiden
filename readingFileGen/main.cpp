@@ -6,6 +6,7 @@
 #include <cppconn/prepared_statement.h>
 #include "../config/dbconfig.cpp"
 
+#include <memory>
 #include <string>
 #include <vector>
 #include <iostream>
@@ -33,6 +34,10 @@ std::vector<Entry> getLatestDirtyData(sql::Connection* dirtyCon, uint64_t timest
 //Sensors in needed for translating human readable sensor names into the key from sensor table
 void insertCleanDataInFile(std::vector<Entry> data, std::string filename, std::map<std::string, int> sensors);
 
+//Inserts data collected in new db, meant for daily inserts
+bool insertCleanData(sql::Connection* cleanCon, std::vector<Entry> data, std::map<std::string, int> sensors);
+
+
 //Returns time 10 minutes ago in millis
 uint64_t getEpochUpperLimit();
 
@@ -49,6 +54,7 @@ void printTimeFromMillis(uint64_t epochMillis);
 std::map<std::string, int> getSensors(sql::Connection* cleanCon);
 
 int totalLinesWritten = 0;
+void initDbConnections(sql::Connection* dirtyCon, sql::Connection* cleanCon);
 
 int main()
 {
@@ -64,22 +70,12 @@ int main()
 	std::time_t start_time = std::chrono::system_clock::to_time_t(start);
 	std::cout << "\n\nLog insert. Time: " << std::ctime(&start_time) << "\n";
 
-	//Set connectionstrings
-	std::string sourceConnectionString = "tcp://" + sourceDbHostNameV6 + ":" + sourceDbPort;
-	std::string destConnectionString = "tcp://" + destDbHostNameV6 + ":" + destDbPort;
 	try
 	{
-		std::cout << "Connecting to databases..\n";
-		std::cout << sourceConnectionString << "\n";
-		//Init database connections
-		sql::Driver* driver = get_driver_instance();
-		sql::Connection* dirtyConnection;
-		sql::Connection* cleanConnection;
-		dirtyConnection = driver->connect(sourceConnectionString, sourceDbUsername, sourceDbPassword);
-		cleanConnection = driver->connect(destConnectionString, destDbUsername, destDbPassword);
-		dirtyConnection->setSchema("vestsiden");
-		cleanConnection->setSchema("vestsiden");
-		std::cout << "Databases connected\n";
+		sql::Connection* dirtyCon;
+		sql::Connection* cleanCon;
+		initDbConnections(dirtyCon, cleanCon);
+
 
 		//Earliest sensor reading in dirty db
 		const uint64_t fileInsertLowerLimit = 1581845340000;
@@ -102,14 +98,14 @@ int main()
 		}
 
 		//Get sensors for translating sensorname to ID
-		auto sensors = getSensors(cleanConnection);
+		auto sensors = getSensors(cleanCon);
 
 		//Loop until the file has been filled with all rows from dirty db
 		while(currentLower < fileInsertUpperLimit)
 		{
 			auto t1 = std::chrono::high_resolution_clock::now();
 			std::cout << "Fetching data..\n";
-			auto data = getLatestDirtyData(dirtyConnection, currentLower, currentUpper);
+			auto data = getLatestDirtyData(dirtyCon, currentLower, currentUpper);
 
 			//If there isn't any more new data, we are done
 			/* if(data.empty()) */
@@ -138,10 +134,7 @@ int main()
 			std::cout << duration << "\n";
 			std::cout << "Total lines written: " << totalLinesWritten << "\n";
 		}
-		//Memory cleanup (not really necessary)
 		std::cout << "Done, cleaning up..\n";
-    	delete dirtyConnection;
-		delete cleanConnection;
 	}
 	catch(sql::SQLException& e)
 	{
@@ -203,6 +196,40 @@ std::vector<Entry> getLatestDirtyData(sql::Connection* dirtyCon, uint64_t timest
 	delete stmt;
 
     return newData;
+}
+
+bool insertCleanData(sql::Connection* cleanCon, std::vector<Entry> data, std::map<std::string, int> sensors)
+{
+
+	sql::Statement* stmt;
+	stmt = cleanCon->createStatement();
+	std::string query = "";
+	query += "INSERT INTO `HISTORYNUMERICTRENDRECORD` ";
+	query += "(`TIMESTAMP`, `VALUE`, `HISTORY_ID`, `STATUS`) ";
+	query += "VALUES ";
+
+
+	for(auto c : data)
+	{
+
+		int sensorId = sensors.at(c.sensorName);
+
+
+
+		query += "(";
+		query += std::to_string(millis_to_seconds(c.timestamp)) + ", ";
+		query += doubleToScientific(c.value, 5) + ", ";
+		query += std::to_string(sensorId) + ", ";
+		query += std::to_string(c.status);
+		query += "), ";
+	}
+
+	query.erase(query.length()-2);
+	/* std::cout << query << "\n"; */
+
+	stmt->execute(query);
+	delete stmt;
+	return true;
 }
 
 void insertCleanDataInFile(std::vector<Entry> data, std::string filename, std::map<std::string, int> sensors)
@@ -279,4 +306,23 @@ std::string doubleToScientific(double d, int precision)
 	s << std::setprecision(precision);
 	s << d;
 	return s.str();
+}
+
+
+void initDbConnections(sql::Connection* dirtyCon, sql::Connection* cleanCon);
+{
+
+	//Set connectionstrings
+	std::string sourceConnectionString = "tcp://" + sourceDbHostNameV6 + ":" + sourceDbPort;
+	std::string destConnectionString = "tcp://" + destDbHostNameV6 + ":" + destDbPort;
+
+	std::cout << "Connecting to databases..\n";
+	std::cout << sourceConnectionString << "\n";
+	//Init database connections
+	sql::Driver* driver = get_driver_instance();
+	dirtyCon = driver->connect(sourceConnectionString, sourceDbUsername, sourceDbPassword);
+	cleanCon = driver->connect(destConnectionString, destDbUsername, destDbPassword);
+	dirtyCon->setSchema("vestsiden");
+	cleanCon->setSchema("vestsiden");
+	std::cout << "Databases connected\n";
 }
