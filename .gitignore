@@ -1,8 +1,10 @@
-config/
 config/*
+!config/dummy_dbconfig.cpp
+!config/dummy_newDb.conf
+!config/dummy_oldDb.conf
+!config/sql.cnf
 docs*
 docs/
-loadfiles/
 loadfiles/*
 src/lib/Helpers.o
 src/periodicInsert/fill
