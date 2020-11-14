@@ -1,7 +1,7 @@
 PROG = readingFileGen
 CC = g++
 CPPFLAGS = -I /usr/include -L /usr/lib
-OBJS = main.o
+OBJS = main.o ../lib/Helpers.o
 LDFLAGS = -lmysqlcppconn
 all: build run
 run:

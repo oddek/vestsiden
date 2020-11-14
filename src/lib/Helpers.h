@@ -7,7 +7,7 @@
 #include <cppconn/resultset.h>
 #include <cppconn/statement.h>
 #include <cppconn/prepared_statement.h>
-#include "../config/dbconfig.cpp"
+#include "../../config/dbconfig.cpp"
 
 #include <memory>
 #include <string>
@@ -32,20 +32,33 @@ struct Entry
 	int status;
 };
 
+//Data to be read from sensor table of dirty DB
+struct SensorEntry
+{
+	int id;
+	std::string name;
+	std::string valuefacet;
+};
+
 //Returns vector of rows from dirty db
 //Including the lower timestamp, excluding the upper timestamp
 std::vector<Entry> getLatestDirtyData(sql::Connection* dirtyCon, uint64_t timestampLowerLimit, uint64_t timestampUpperLimit);
 
 //Appends data collected to a csv file
 //Sensors in needed for translating human readable sensor names into the key from sensor table
-void insertCleanDataInFile(std::vector<Entry> data, std::string filename, std::map<std::string, int> sensors);
+//Returns number of written lines
+int insertCleanDataInFile(std::vector<Entry> data, std::string filename, std::map<std::string, int> sensors);
 
-//Inserts data collected in new db, meant for daily inserts
-bool insertCleanData(sql::Connection* cleanCon, std::vector<Entry> data, std::map<std::string, int> sensors);
+//Inserts data collected in new db, meant for daily inserts, returns number of written lines
+int insertCleanData(sql::Connection* cleanCon, std::vector<Entry> data, std::map<std::string, int> sensors);
 
 
 //Returns time 10 minutes ago in millis
 uint64_t getEpochUpperLimit();
+
+//Returns entry with highest timestamp from cleandb
+//If no entries exits, we return 0
+uint64_t getLastEntryTimestamp(sql::Connection* cleanCon);
 
 //Convert a double to scientific notation. Precision sets total number of digits.
 //Ex: 1.54323e+10
@@ -60,5 +73,16 @@ void printTimeFromMillis(uint64_t epochMillis);
 std::map<std::string, int> getSensors(sql::Connection* cleanCon);
 
 void initDbConnections(sql::Connection* dirtyCon, sql::Connection* cleanCon);
+
+//Check if number of sensors match in old and new db, update new if necessary
+void fillSensorTable(sql::Connection* dirtyCon, sql::Connection* cleanCon);
+
+//Has to take epoch in seconds!
+void printTimeFromSeconds(uint64_t epoch);
+
+std::streambuf* startLog();
+
+void endLog(std::streambuf* coutbuf);
+
 
 #endif

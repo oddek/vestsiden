@@ -1,7 +1,7 @@
-PROG = test
+PROG = fill 
 CC = g++
 CPPFLAGS = -I /usr/include -L /usr/lib
-OBJS = test.o
+OBJS = main.o ../lib/Helpers.o
 LDFLAGS = -lmysqlcppconn
 all: build run
 run:

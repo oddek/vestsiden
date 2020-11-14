@@ -2,8 +2,7 @@
 
 configPath=$(pwd)/../config
 sqlScriptPath=$(pwd)/../sql
-sensorFileGenPath=$(pwd)/../sensorFileGen
-loadfilesPath=$(pwd)/../loadfiles
+updateSensorTablePath=$(pwd)/../src/updateSensors
 
 
 mysql --defaults-extra-file=$configPath/newDb.conf -s -N -e "
