@@ -1,4 +1,5 @@
 #!/bin/bash
 
-sourcePath=$(pwd)/../periodicFiller
-sourcePath/fill
+echo 'Starting periodicFiller'
+../src/periodicInsert/fill
+echo 'Done'

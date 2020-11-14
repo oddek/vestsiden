@@ -1,26 +1,28 @@
 #include "Helpers.h"
+#include <cppconn/prepared_statement.h>
 
-std::vector<Entry> getLatestDirtyData(sql::Connection* dirtyCon, const uint64_t& timestampLowerLimit, const uint64_t& timestampUpperLimit)
+std::vector<Entry> getLatestDirtyData(std::unique_ptr<sql::Connection>& dirtyCon, const uint64_t& timestampLowerLimit, const uint64_t& timestampUpperLimit)
 {
     std::vector<Entry> newData;
-	sql::ResultSet* res;
-    sql::PreparedStatement* stmt;
 
-	stmt = dirtyCon->prepareStatement
-	(
+	std::string query =
 		"SELECT "
 			"`TIMESTAMP`, `VALUE`, `HISTORY_ID`, `STATUS` "
 		"FROM "
 			"HISTORYNUMERICTRENDRECORD "
 		"WHERE "
-			"`TIMESTAMP` >= (?) AND `TIMESTAMP` < (?) "
-	);
+			"`TIMESTAMP` >= (?) AND `TIMESTAMP` < (?) ";
 
-	stmt->setUInt64(1, timestampLowerLimit);
-	stmt->setUInt64(2, timestampUpperLimit);
+	//Create prepared statement object
+	std::unique_ptr<sql::PreparedStatement> prep_stmt(dirtyCon->prepareStatement(query));
 
-	res = stmt->executeQuery();
+	//Bind parameters
+	prep_stmt->setUInt64(1, timestampLowerLimit);
+	prep_stmt->setUInt64(2, timestampUpperLimit);
+	//Perform query
+	std::unique_ptr<sql::ResultSet> res(prep_stmt->executeQuery());
 
+	//Fill vector with data
 	while(res->next())
 	{
 		Entry d;
@@ -31,44 +33,36 @@ std::vector<Entry> getLatestDirtyData(sql::Connection* dirtyCon, const uint64_t&
 		newData.push_back(d);
 	}
 
-	std::cout << "Got new data\n";
-
-	delete res;
-	delete stmt;
-
     return newData;
 }
 
-int insertCleanData(sql::Connection* cleanCon, std::vector<Entry> data, std::map<std::string, int> sensors)
+int insertCleanData(std::unique_ptr<sql::Connection>& cleanCon, std::vector<Entry> data, std::map<std::string, int> sensors)
 {
-
-	sql::Statement* stmt;
-	stmt = cleanCon->createStatement();
-	std::string query = "";
-	query += "INSERT INTO `HISTORYNUMERICTRENDRECORD` ";
-	query += "(`TIMESTAMP`, `VALUE`, `HISTORY_ID`, `STATUS`) ";
-	query += "VALUES ";
-
-
+	//Start of query
+	std::string query =
+		"INSERT INTO `HISTORYNUMERICTRENDRECORD` "
+			"(`TIMESTAMP`, `VALUE`, `HISTORY_ID`, `STATUS`) "
+		"VALUES ";
+	//Append all the values in data vector to the same query
+	//This is done to save time
 	for(auto c : data)
 	{
-
+		//Translate sensorName to sensorId
 		int sensorId = sensors.at(c.sensorName);
-
-
 
 		query += "(";
 		query += std::to_string(millis_to_seconds(c.timestamp)) + ", ";
 		query += doubleToScientific(c.value, 5) + ", ";
 		query += std::to_string(sensorId) + ", ";
-		query += std::to_string(c.status);
-		query += "), ";
+		query += std::to_string(c.status) + "), ";
 	}
-
+	//Erase the last redundant comma and space
 	query.erase(query.length()-2);
-
+	//Create statement
+	std::unique_ptr<sql::Statement> stmt(cleanCon->createStatement());
+	//Perform query
 	stmt->execute(query);
-	delete stmt;
+	//Returns number of rows inserted
 	return data.size();
 }
 
@@ -92,24 +86,26 @@ int insertCleanDataInFile(std::vector<Entry> data, std::string filename, std::ma
 	return data.size();
 }
 
-std::map<std::string, int> getSensors(sql::Connection* cleanCon)
+std::map<std::string, int> getSensorMap(std::unique_ptr<sql::Connection>& cleanCon)
 {
-	sql::Statement* stmt;
-	sql::ResultSet* res;
-	stmt = cleanCon->createStatement();
-	std::string query = "SELECT `ID`, `NAME` FROM `HISTORY_TYPE_MAP`";
-	res = stmt->executeQuery(query);
+	std::string query =
+		"SELECT "
+			"`ID`, `NAME` "
+		"FROM "
+			"`HISTORY_TYPE_MAP`";
 
+	//Create stmt and perform query
+	std::unique_ptr<sql::Statement> stmt(cleanCon->createStatement());
+	std::unique_ptr<sql::ResultSet> res(stmt->executeQuery(query));
+
+	//Fill a std::map with all sensors
 	std::map<std::string, int> sensors;
 	while(res->next())
 	{
 		int id = res->getInt("ID");
 		std::string name = res->getString("NAME");
-
 		sensors.insert(std::pair<std::string, int>(name, id));
 	}
-
-	delete stmt;
 	return sensors;
 }
 
@@ -126,30 +122,26 @@ uint64_t getEpochUpperLimit()
 	return limit;
 }
 
-uint64_t getLastEntryTimestamp(sql::Connection* cleanCon)
+uint64_t getLastEntryTimestamp(std::unique_ptr<sql::Connection>& cleanCon)
 {
-	sql::Statement* stmt;
-	sql::ResultSet* res;
+	//Get max timestamp from clean db, if empty return 0
+	std::string query =
+		"SELECT "
+			"COALESCE(MAX(TIMESTAMP), 0) as 'LastEntry' "
+		"FROM "
+			"HISTORYNUMERICTRENDRECORD";
 
-	stmt = cleanCon->createStatement();
+	//Create stmt and perform query
+	std::unique_ptr<sql::Statement> stmt(cleanCon->createStatement());
+	std::unique_ptr<sql::ResultSet> res(stmt->executeQuery(query));
 
-	//If the database is empty, we return 0
-	std::string query = "SELECT COALESCE(MAX(TIMESTAMP), 0) as 'LastEntry' FROM HISTORYNUMERICTRENDRECORD";
-
-	//Get highest timestamp in CleanDB;
-	res = stmt->executeQuery(query);
-	//Init to 1.1.1970:
 	uint64_t lastEntry = 0;
-	//If we got result, overwrite
 	while(res->next())
 	{
-		std::cout << "Time from db: " << res->getUInt64("LastEntry") <<"\n";
 		lastEntry  = res->getUInt64("LastEntry");
 	}
-
-	delete stmt;
-	delete res;
-	return lastEntry * 1000;
+	//CleanDB holds seconds, we want millis
+	return seconds_to_millis(lastEntry);
 }
 
 void printTimeFromMillis(uint64_t epochMillis)
@@ -157,6 +149,11 @@ void printTimeFromMillis(uint64_t epochMillis)
 	time_t t = epochMillis/1000;
 
 	std::cout << "\t" << epochMillis << "\n\t" << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << "\n";
+}
+
+uint64_t seconds_to_millis(uint64_t i)
+{
+	return i * 1000;
 }
 
 uint64_t millis_to_seconds(uint64_t i)
@@ -173,48 +170,38 @@ std::string doubleToScientific(double d, int precision)
 	return s.str();
 }
 
-
-void initDbConnections(sql::Connection* dirtyCon, sql::Connection* cleanCon)
+std::string getDirtyConnectionString()
 {
-
-	//Set connectionstrings
-	std::string sourceConnectionString = "tcp://" + sourceDbHostNameV6 + ":" + sourceDbPort;
-	std::string destConnectionString = "tcp://" + destDbHostNameV6 + ":" + destDbPort;
-
-	std::cout << "Connecting to databases..\n";
-	std::cout << sourceConnectionString << "\n";
-	//Init database connections
-	sql::Driver* driver = get_driver_instance();
-	dirtyCon = driver->connect(sourceConnectionString, sourceDbUsername, sourceDbPassword);
-	cleanCon = driver->connect(destConnectionString, destDbUsername, destDbPassword);
-	dirtyCon->setSchema("vestsiden");
-	cleanCon->setSchema("vestsiden");
-	std::cout << "Databases connected\n";
+	return "tcp://" + sourceDbHostNameV6 + ":" + sourceDbPort;
 }
 
-
-void fillSensorTable(sql::Connection* dirtyCon, sql::Connection* cleanCon)
+std::string getCleanConnectionString()
 {
-	std::vector<SensorEntry> entries;
+	return "tcp://" + destDbHostNameV6 + ":" + destDbPort;
+}
 
-	sql::Statement* stmt;
-	sql::ResultSet* res;
-	sql::PreparedStatement* prep_stmt;
+int getSensorCountFromDb(std::unique_ptr<sql::Connection>& con)
+{
+	std::string query =
+		"SELECT "
+			"COUNT(*) AS CNT "
+		"FROM "
+			"`HISTORY_TYPE_MAP`";
 
+	//Create stmt and perform query
+	std::unique_ptr<sql::Statement> stmt(con->createStatement());
+	std::unique_ptr<sql::ResultSet> res(stmt->executeQuery(query));
+
+	res->next();
+	return res->getInt("CNT");
+}
+
+void fillSensorTable(std::unique_ptr<sql::Connection>& dirtyCon, std::unique_ptr<sql::Connection>& cleanCon)
+{
 	//Get count of sensors from dirtyDb
-	stmt = dirtyCon->createStatement();
-	std::string query = "SELECT COUNT(*) AS CNT FROM `HISTORY_TYPE_MAP`";
-	res = stmt->executeQuery(query);
-	res->next();
-	int dirtySensorCount = res->getInt("CNT");
-
+	int dirtySensorCount = getSensorCountFromDb(dirtyCon);
 	//Get count of sensors from cleanDb
-	stmt = cleanCon->createStatement();
-	query = "SELECT COUNT(*) AS CNT FROM `HISTORY_TYPE_MAP`";
-	res = stmt->executeQuery(query);
-	res->next();
-	int cleanSensorCount = res->getInt("CNT");
-
+	int cleanSensorCount = getSensorCountFromDb(cleanCon);
 	//If sensor counts are equal, there is no need to update
 	if(dirtySensorCount == cleanSensorCount)
 	{
@@ -225,10 +212,16 @@ void fillSensorTable(sql::Connection* dirtyCon, sql::Connection* cleanCon)
 	std::cout << "Number of sensors are NOT equal, updating cleanDb..\n";
 
 	//Extract all sensors from dirty db
-	stmt = dirtyCon->createStatement();
-	query = "SELECT `ID`, `ID_`, `VALUEFACETS` FROM `HISTORY_TYPE_MAP`";
-	res = stmt->executeQuery(query);
+	std::string query =
+		"SELECT "
+			"`ID`, `ID_`, `VALUEFACETS` "
+		"FROM "
+			"`HISTORY_TYPE_MAP`";
 
+	std::unique_ptr<sql::Statement> stmt(dirtyCon->createStatement());
+	std::unique_ptr<sql::ResultSet> res(stmt->executeQuery(query));
+
+	std::vector<SensorEntry> entries;
 	while(res->next())
 	{
 		SensorEntry s;
@@ -245,26 +238,23 @@ void fillSensorTable(sql::Connection* dirtyCon, sql::Connection* cleanCon)
 	//Insert sensor entries
 	//Unique constraint in database will handle duplicates.
 	//Will not throw an error
+	//Using multiple prepared statements and not multiple insert because of difficulty with escape characters in valuefacets.
 	for(auto& s : entries)
 	{
-		prep_stmt = cleanCon->prepareStatement
-		(
+		query =
 			"INSERT IGNORE INTO "
 				"`HISTORY_TYPE_MAP`"
 					"(`ID`, `NAME`, `VALUEFACETS`) "
-				"VALUES (?, ?, ?) "
-		);
+			"VALUES "
+				"(?, ?, ?) ";
 
+		std::unique_ptr<sql::PreparedStatement> prep_stmt(cleanCon->prepareStatement(query));
 		prep_stmt->setInt(1, s.id);
 		prep_stmt->setString(2, s.name);
 		prep_stmt->setString(3, s.valuefacet);
 
 		prep_stmt->execute();
 	}
-
-	delete stmt;
-	delete res;
-	delete prep_stmt;
 }
 
 

@@ -14,9 +14,11 @@ int main()
 	const int minuteFetchIncrement = 30;
 	try
 	{
-		sql::Connection* dirtyCon;
-		sql::Connection* cleanCon;
-		initDbConnections(dirtyCon, cleanCon);
+		sql::Driver* driver = get_driver_instance();
+		std::unique_ptr<sql::Connection> dirtyCon(driver->connect(getDirtyConnectionString(), sourceDbUsername, sourceDbPassword));
+		std::unique_ptr<sql::Connection> cleanCon(driver->connect(getCleanConnectionString(), destDbUsername, destDbPassword));
+		dirtyCon->setSchema("vestsiden");
+		cleanCon->setSchema("vestsiden");
 
 		//Earliest sensor reading in dirty db
 		const uint64_t totalInsertLowerLimit = getLastEntryTimestamp(cleanCon);
@@ -45,7 +47,7 @@ int main()
 		}
 
 		//Get sensors for translating sensorname to ID
-		const auto sensors = getSensors(cleanCon);
+		const auto sensors = getSensorMap(cleanCon);
 
 		int totalLinesWritten = 0;
 

@@ -1,9 +1,4 @@
 #!/bin/bash
-currentPath=$(pwd)
-configPath=$currentPath/../config
-filePath=$currentPath/../loadfiles
-echo $configPath
-echo $filePath
 # export TMPDIR=/mnt/mysqldb/extHome/tmp
 #echo 'About to sort readings.csv'
 ##sort file based on two first columns(timestamp and sensorid)

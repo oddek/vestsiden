@@ -14,9 +14,11 @@ int main()
 
 	try
 	{
-		sql::Connection* dirtyCon;
-		sql::Connection* cleanCon;
-		initDbConnections(dirtyCon, cleanCon);
+		sql::Driver* driver = get_driver_instance();
+		std::unique_ptr<sql::Connection> dirtyCon(driver->connect(getDirtyConnectionString(), sourceDbUsername, sourceDbPassword));
+		std::unique_ptr<sql::Connection> cleanCon(driver->connect(getCleanConnectionString(), destDbUsername, destDbPassword));
+		dirtyCon->setSchema("vestsiden");
+		cleanCon->setSchema("vestsiden");
 
 		//Earliest sensor reading in dirty db
 		const uint64_t totalInsertLowerLimit = 1581845340000;
@@ -38,14 +40,14 @@ int main()
 		}
 
 		//Get sensors for translating sensorname to ID
-		const auto sensors = getSensors(cleanCon);
+		const auto sensors = getSensorMap(cleanCon);
 
 		int totalLinesWritten = 0;
 
 		//Loop until the file has been filled with all rows from dirty db
 		while(currentLower < totalInsertUpperLimit)
 		{
-
+			//Start timer
 			auto t1 = std::chrono::high_resolution_clock::now();
 			std::cout << "Fetching data..\n\tLower bound: " << currentLower << "\n\tUpper bound: " << currentUpper << "\n";
 			auto data = getLatestDirtyData(dirtyCon, currentLower, currentUpper);

@@ -40,9 +40,13 @@ struct SensorEntry
 	std::string valuefacet;
 };
 
+std::string getDirtyConnectionString();
+
+std::string getCleanConnectionString();
+
 //Returns vector of rows from dirty db
 //Including the lower timestamp, excluding the upper timestamp
-std::vector<Entry> getLatestDirtyData(sql::Connection* dirtyCon, uint64_t timestampLowerLimit, uint64_t timestampUpperLimit);
+std::vector<Entry> getLatestDirtyData(std::unique_ptr<sql::Connection>& dirtyCon, uint64_t timestampLowerLimit, uint64_t timestampUpperLimit);
 
 //Appends data collected to a csv file
 //Sensors in needed for translating human readable sensor names into the key from sensor table
@@ -50,7 +54,7 @@ std::vector<Entry> getLatestDirtyData(sql::Connection* dirtyCon, uint64_t timest
 int insertCleanDataInFile(std::vector<Entry> data, std::string filename, std::map<std::string, int> sensors);
 
 //Inserts data collected in new db, meant for daily inserts, returns number of written lines
-int insertCleanData(sql::Connection* cleanCon, std::vector<Entry> data, std::map<std::string, int> sensors);
+int insertCleanData(std::unique_ptr<sql::Connection>& cleanCon, std::vector<Entry> data, std::map<std::string, int> sensors);
 
 
 //Returns time 10 minutes ago in millis
@@ -58,7 +62,7 @@ uint64_t getEpochUpperLimit();
 
 //Returns entry with highest timestamp from cleandb
 //If no entries exits, we return 0
-uint64_t getLastEntryTimestamp(sql::Connection* cleanCon);
+uint64_t getLastEntryTimestamp(std::unique_ptr<sql::Connection>& cleanCon);
 
 //Convert a double to scientific notation. Precision sets total number of digits.
 //Ex: 1.54323e+10
@@ -66,16 +70,17 @@ std::string doubleToScientific(double d, int precision);
 
 uint64_t millis_to_seconds(uint64_t i);
 
+uint64_t seconds_to_millis(uint64_t i);
 //Prints human readable time from millis
 void printTimeFromMillis(uint64_t epochMillis);
 
 //Returns map with sensorname and primarykey from sensortable in CLEANDB
-std::map<std::string, int> getSensors(sql::Connection* cleanCon);
+std::map<std::string, int> getSensorMap(std::unique_ptr<sql::Connection>& cleanCon);
 
-void initDbConnections(sql::Connection* dirtyCon, sql::Connection* cleanCon);
+int getSensorCountFromDb(std::unique_ptr<sql::Connection>& con);
 
 //Check if number of sensors match in old and new db, update new if necessary
-void fillSensorTable(sql::Connection* dirtyCon, sql::Connection* cleanCon);
+void fillSensorTable(std::unique_ptr<sql::Connection>& dirtyCon, std::unique_ptr<sql::Connection>& cleanCon);
 
 //Has to take epoch in seconds!
 void printTimeFromSeconds(uint64_t epoch);
