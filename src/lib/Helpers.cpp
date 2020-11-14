@@ -215,9 +215,6 @@ void fillSensorTable(sql::Connection* dirtyCon, sql::Connection* cleanCon)
 	res->next();
 	int cleanSensorCount = res->getInt("CNT");
 
-	std::cout << "Dirty sensor count: " << dirtySensorCount << "\n";
-	std::cout << "Clean sensor count: " << cleanSensorCount << "\n";
-
 	//If sensor counts are equal, there is no need to update
 	if(dirtySensorCount == cleanSensorCount)
 	{
@@ -227,6 +224,7 @@ void fillSensorTable(sql::Connection* dirtyCon, sql::Connection* cleanCon)
 
 	std::cout << "Number of sensors are NOT equal, updating cleanDb..\n";
 
+	//Extract all sensors from dirty db
 	stmt = dirtyCon->createStatement();
 	query = "SELECT `ID`, `ID_`, `VALUEFACETS` FROM `HISTORY_TYPE_MAP`";
 	res = stmt->executeQuery(query);
@@ -241,8 +239,12 @@ void fillSensorTable(sql::Connection* dirtyCon, sql::Connection* cleanCon)
 		entries.push_back(s);
 	}
 
-	std::cout << "Size of entries: " << entries.size() << "\n";
+	//Sort entries based on ID
+	std::sort(entries.begin(), entries.end(), sensorEntrySort);
 
+	//Insert sensor entries
+	//Unique constraint in database will handle duplicates.
+	//Will not throw an error
 	for(auto& s : entries)
 	{
 		prep_stmt = cleanCon->prepareStatement
@@ -295,4 +297,9 @@ void endLog(std::streambuf* coutbuf)
 	std::time_t start_time = std::chrono::system_clock::to_time_t(start);
 	std::cout << "\n\nProgram finished at: " << std::ctime(&start_time) << "\n";
 	std::cout.rdbuf(coutbuf);
+}
+
+bool sensorEntrySort(const SensorEntry& a, const SensorEntry& b)
+{
+	return a.id < b.id;
 }

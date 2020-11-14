@@ -84,5 +84,6 @@ std::streambuf* startLog();
 
 void endLog(std::streambuf* coutbuf);
 
+bool sensorEntrySort(const SensorEntry& a, const SensorEntry& b);
 
 #endif
