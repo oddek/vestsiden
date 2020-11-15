@@ -11,5 +11,5 @@ src/periodicInsert/fill
 src/periodicInsert/main.o
 src/readingFileGen/readingFileGen
 src/readingFileGen/main.o
-# src/updateSensors/main.o
-# src/updateSensors/updateSensors
+src/updateSensors/main.o
+src/updateSensors/updateSensors
