@@ -1,17 +1,22 @@
-PROG = readingFileGen
+PROG = readingFileGen 
+
 CC = g++
-CPPFLAGS = -I /usr/include -L /usr/lib
-OBJS = main.o ../lib/Helpers.o
+CXXFLAGS = -Wall -Wextra -std=c++17
+CPPFLAGS = #-I /usr/include -L /usr/lib
+SRC = $(wildcard *.cpp) \
+      $(wildcard ../lib/*.cpp)
+OBJ = $(SRC:.cpp=.o)
 LDFLAGS = -lmysqlcppconn
+
 all: build run
 run:
 	./$(PROG) 
 
 build: $(PROG)
 
-$(PROG): $(OBJS)
-	g++ -o $@ $(OBJS) $(LDFLAGS)
+$(PROG): $(OBJ)
+	$(CC) $(CXXFLAGS) -o $@ $(OBJ) $(CPPFLAGS) $(LDFLAGS)
 
 clean:
-	rm -f *stackdump $(PROG) *.o .depend
+	rm -f *stackdump $(PROG) $(OBJ)
 

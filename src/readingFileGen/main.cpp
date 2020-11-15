@@ -2,6 +2,8 @@
 
 int main()
 {
+	auto i = getEpochUpperLimit();
+	printTimeFromMillis(i);
 	return 0;
 	const bool log = true;
 	std::streambuf* logBuf;
