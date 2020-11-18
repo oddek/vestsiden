@@ -2,23 +2,25 @@
 
 configPath=$(pwd)/../config
 
-
 SECONDS=0
 maxTimestamp=`mysql --defaults-extra-file=$configPath/newDb.conf -s -N -e "
   SELECT MAX(TIMESTAMP) FROM HISTORYNUMERICTRENDRECORD;"`
   
-echo 'Highest timestamp found in new db: ' $maxTimestamp '\n\tTook ' $SECONDS's'
+echo 'Highest timestamp found in new db: ' $maxTimestamp 
+echo 'Took ' $SECONDS's'
 maxMillis=$(($maxTimeStamp * 1000))
+
+echo 'Highest timestamp found in millis: ' $maxMillis
 
 SECONDS=0
 oldCount=`mysql --defaults-extra-file=$configPath/oldDb.conf -e "
-  SELECT COUNT(*) as OldCount from HISTORYNUMERICTRENDRECORD WHERE TIMESTAMP <= '$maxMillis';"`
+  SELECT COUNT(*) from HISTORYNUMERICTRENDRECORD WHERE TIMESTAMP <= '$maxMillis';"`
 echo 'Took ' $SECONDS's'
 echo 'OldCount: ' $oldCount
 
 SECONDS=0
 newCount=`mysql --defaults-extra-file=$configPath/newDb.conf -e "
-  SELECT COUNT(*) as NewCount from HISTORYNUMERICTRENDRECORD;"`
+  SELECT COUNT(*) from HISTORYNUMERICTRENDRECORD;"`
 echo 'Took ' $SECONDS's'
 
 echo 'OldCount: ' $oldCount
