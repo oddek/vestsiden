@@ -13,3 +13,4 @@ src/readingFileGen/readingFileGen
 src/readingFileGen/main.o
 src/updateSensors/main.o
 src/updateSensors/updateSensors
+*.log
