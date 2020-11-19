@@ -144,11 +144,11 @@ uint64_t getLastEntryTimestamp(std::unique_ptr<sql::Connection>& cleanCon)
 	return seconds_to_millis(lastEntry);
 }
 
-void printTimeFromMillis(uint64_t epochMillis)
+void printTimeFromMillis(uint64_t epochMillis, TeeStream& log)
 {
 	time_t t = epochMillis/1000;
 
-	std::cout << "\t" << epochMillis << "\n\t" << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << "\n";
+	log << "\t" << epochMillis << "\n\t" << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << "\n";
 }
 
 uint64_t seconds_to_millis(uint64_t i)
@@ -196,7 +196,7 @@ int getSensorCountFromDb(std::unique_ptr<sql::Connection>& con)
 	return res->getInt("CNT");
 }
 
-void fillSensorTable(std::unique_ptr<sql::Connection>& dirtyCon, std::unique_ptr<sql::Connection>& cleanCon)
+int fillSensorTable(std::unique_ptr<sql::Connection>& dirtyCon, std::unique_ptr<sql::Connection>& cleanCon)
 {
 	//Get count of sensors from dirtyDb
 	int dirtySensorCount = getSensorCountFromDb(dirtyCon);
@@ -205,11 +205,8 @@ void fillSensorTable(std::unique_ptr<sql::Connection>& dirtyCon, std::unique_ptr
 	//If sensor counts are equal, there is no need to update
 	if(dirtySensorCount == cleanSensorCount)
 	{
-		std::cout << "Number of sensors equal, no need to update\n";
-		return;
+		return 0;
 	}
-
-	std::cout << "Number of sensors are NOT equal, updating cleanDb..\n";
 
 	//Extract all sensors from dirty db
 	std::string query =
@@ -255,38 +252,17 @@ void fillSensorTable(std::unique_ptr<sql::Connection>& dirtyCon, std::unique_ptr
 
 		prep_stmt->execute();
 	}
+
+	return entries.size();
 }
 
 
 //Has to take epoch in seconds!
-void printTimeFromSeconds(uint64_t epoch)
+void printTimeFromSeconds(uint64_t epoch, TeeStream& log)
 {
 	time_t t = epoch;
 
-	std::cout << "\t" << epoch << "\n\t" << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << "\n";
-}
-
-std::streambuf* startLog()
-{
-	//Redirect cout to file
-	std::ofstream out("out.txt", std::fstream::app);
-	std::streambuf* coutbuf = std::cout.rdbuf();
-	std::cout.rdbuf(out.rdbuf());
-
-	//Start time for log
-    auto start = std::chrono::system_clock::now();
-	std::time_t start_time = std::chrono::system_clock::to_time_t(start);
-	std::cout << "\n\nLog insert. Time: " << std::ctime(&start_time) << "\n";
-
-	return coutbuf;
-}
-
-void endLog(std::streambuf* coutbuf)
-{
-    auto start = std::chrono::system_clock::now();
-	std::time_t start_time = std::chrono::system_clock::to_time_t(start);
-	std::cout << "\n\nProgram finished at: " << std::ctime(&start_time) << "\n";
-	std::cout.rdbuf(coutbuf);
+	log << "\t" << epoch << "\n\t" << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << "\n";
 }
 
 bool sensorEntrySort(const SensorEntry& a, const SensorEntry& b)

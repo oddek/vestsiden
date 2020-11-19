@@ -2,11 +2,11 @@
 
 int main()
 {
+    std::ofstream logFile("status.log", std::fstream::app);
+    Tee tee(std::cout, logFile);
+    TeeStream log(tee);
+	log << "log";
 	return 0;
-	const bool log = true;
-	std::streambuf* logBuf;
-	if(log) logBuf = startLog();
-
 	try
 	{
 		sql::Driver* driver = get_driver_instance();
@@ -15,22 +15,22 @@ int main()
 		dirtyCon->setSchema("vestsiden");
 		cleanCon->setSchema("vestsiden");
 
-		fillSensorTable(dirtyCon, cleanCon);
+		int i = fillSensorTable(dirtyCon, cleanCon);
+		if(i == 0) log << "No update necessary";
+		else log << "Updated sensor table, currently " << i << " sensors in db\n";
 
-		std::cout << "Done, cleaning up..\n";
+		log << "Done, cleaning up..\n";
 	}
 	catch(sql::SQLException& e)
 	{
-		std::cout << "# ERR: SQLException in " << __FILE__;
-	    std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
-	    std::cout << "# ERR: " << e.what();
-	    std::cout << " (MySQL error code: " << e.getErrorCode();
-	    std::cout << ", SQLState: " << e.getSQLState() << " )" << std::endl;
-		std::cout << "Exit on error";
-		if(log) endLog(logBuf);
+		log << "# ERR: SQLException in " << __FILE__;
+	    log << "(" << __FUNCTION__ << ") on line " << __LINE__ << std::endl;
+	    log << "# ERR: " << e.what();
+	    log << " (MySQL error code: " << e.getErrorCode();
+	    log << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+		log << "Exit on error";
 		return -1;
 	}
-	std::cout << "Clean exit\n";
-	if(log) endLog(logBuf);
+	log << "Clean exit\n";
 	return 0;
 }

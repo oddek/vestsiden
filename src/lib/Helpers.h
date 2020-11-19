@@ -9,6 +9,8 @@
 #include <cppconn/prepared_statement.h>
 #include "../../config/dbconfig.cpp"
 
+#include <boost/iostreams/stream.hpp>
+#include <boost/iostreams/tee.hpp>
 #include <memory>
 #include <string>
 #include <vector>
@@ -20,8 +22,8 @@
 #include <sstream>
 #include <fstream>
 
-
-
+typedef boost::iostreams::tee_device<std::ostream, std::ofstream> Tee;
+typedef boost::iostreams::stream<Tee> TeeStream;
 
 //Data structure to hold rows read from dirty DB
 struct Entry
@@ -72,7 +74,7 @@ uint64_t millis_to_seconds(uint64_t i);
 
 uint64_t seconds_to_millis(uint64_t i);
 //Prints human readable time from millis
-void printTimeFromMillis(uint64_t epochMillis);
+void printTimeFromMillis(uint64_t epochMillis, TeeStream& log);
 
 //Returns map with sensorname and primarykey from sensortable in CLEANDB
 std::map<std::string, int> getSensorMap(std::unique_ptr<sql::Connection>& cleanCon);
@@ -80,14 +82,10 @@ std::map<std::string, int> getSensorMap(std::unique_ptr<sql::Connection>& cleanC
 int getSensorCountFromDb(std::unique_ptr<sql::Connection>& con);
 
 //Check if number of sensors match in old and new db, update new if necessary
-void fillSensorTable(std::unique_ptr<sql::Connection>& dirtyCon, std::unique_ptr<sql::Connection>& cleanCon);
+int fillSensorTable(std::unique_ptr<sql::Connection>& dirtyCon, std::unique_ptr<sql::Connection>& cleanCon);
 
 //Has to take epoch in seconds!
-void printTimeFromSeconds(uint64_t epoch);
-
-std::streambuf* startLog();
-
-void endLog(std::streambuf* coutbuf);
+void printTimeFromSeconds(uint64_t epoch, TeeStream& log);
 
 bool sensorEntrySort(const SensorEntry& a, const SensorEntry& b);
 
