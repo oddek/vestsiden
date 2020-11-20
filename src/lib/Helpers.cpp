@@ -1,7 +1,7 @@
 #include "Helpers.h"
 #include <cppconn/prepared_statement.h>
 
-std::vector<Entry> getLatestDirtyData(std::unique_ptr<sql::Connection>& dirtyCon, const uint64_t& timestampLowerLimit, const uint64_t& timestampUpperLimit)
+std::vector<Entry> getLatestDirtyData(std::unique_ptr<sql::Connection>& dirtyCon, uint64_t timestampLowerLimit, uint64_t timestampUpperLimit)
 {
     std::vector<Entry> newData;
 
@@ -117,7 +117,7 @@ uint64_t getEpochUpperLimit()
 	//Convert to millis and uint32
 	uint64_t limit = std::chrono::duration_cast<std::chrono::milliseconds>(t.time_since_epoch()).count();
 
-	limit -= 10*60*1000;
+	limit -= 24*60*60*1000;
 
 	return limit;
 }

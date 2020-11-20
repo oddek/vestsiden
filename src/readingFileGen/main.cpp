@@ -9,7 +9,7 @@ int main()
 	std::cout << "test";
 	return 0;
 
-	const std::string filename = "../../loadfiles/readings2.csv";
+	const std::string filename = "../../loadfiles/readings19Nov.csv";
 	//Set the max time interval for each select statement
 	const int hourlyFetchIncrement = 12;
 
@@ -26,9 +26,11 @@ int main()
 		log << "Got lower limit for file:\n";
 		printTimeFromMillis(totalInsertLowerLimit, log);
 		//Ten minutes ago at runtime
-		const uint64_t totalInsertUpperLimit = getEpochUpperLimit();
+		/* const uint64_t totalInsertUpperLimit = getEpochUpperLimit(); */
+		const uint64_t totalInsertUpperLimit = 1605657600000;//getEpochUpperLimit();
 		log << "Got upper limit for file:\n";
 		printTimeFromMillis(totalInsertUpperLimit, log);
+		/* const uint64_t totalInsertUpperLimit = getEpochUpperLimit(); */
 
 		//Dont want to select more than about 500 000 rows at the time, so we need fill the file incrementally
 		uint64_t currentLower = totalInsertLowerLimit;

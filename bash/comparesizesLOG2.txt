@@ -1,0 +1,3 @@
+Highest timestamp found in new db:  1605285900 \n\tTook  679s
+Took  0s
+OldCount:  OldCount 0
