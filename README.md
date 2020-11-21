@@ -8,9 +8,8 @@
 ## Table of Contents
 
 * [About the Project](#about-the-project)
-  * [Built With](#built-with)
-* [Getting Started](#getting-started)
-  * [Prerequisites](#prerequisites)
+  * [Libraries](#libraries)
+* [Prerequisites](#prerequisites)
 * [Usage](#usage)
 * [License](#license)
 * [Contact](#contact)
@@ -38,19 +37,18 @@ As the majority of queries executed on the database will be to select sensor dat
 
 The complete project consists of software written in C++ as well as Bash scripts. 
 
-### Built With
+
+### Libraries
 * [Boost](https://www.boost.org)
 * [MySQL Connector/C++ 1.1](https://dev.mysql.com/doc/connector-cpp/1.1/en/)
 
 ##### Side note about the choice of version 1.1 of the MySQL C++ connector:
-It is generally recommended to use version 8 these days, however since version 1.1 is still maintained, much easier to install and the fact that I have only good previous experiences with this version, I chose to go for this version.
+It is generally recommended to use version 8 these days. However since version 1.1 is still maintained, much easier to install, and the fact that I have previous experiences with it, I chose not to use version 8.
 
-<!-- GETTING STARTED -->
-## Getting Started
 
-To get a local copy up and running follow these steps.
+## Prerequisites
 
-### Prerequisites
+To get a local copy up and running, these are the prerequisites:
 
 ```sh
 apt install tasksel  
