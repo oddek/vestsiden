@@ -26,13 +26,13 @@ Data is gathered once per minute from 1499 unique sensors at Vestsiden lower sec
 
 At the time of writing(november 2020), this database constists of about 250 million rows, growing with 2.1 million rows every day. This database will throughout the project be refered to as the "dirty database".
 
-![Structure of dirty database](docs/img/dirtyDb.png?raw=true "Title")
+![Structure of dirty database](sql/img/dirtyDb.png?raw=true "Title")
 
 
 All of the sensor readings will continously be transfered to a new database, which is throughout the project refered to as the "clean database". The design for this database can be seen in the figure below:
 
 
-![Structure of clean database](docs/img/cleanDb.png?raw=true "Title")
+![Structure of clean database](sql/img/cleanDb.png?raw=true "Title")
 
 As the majority of queries executed on the database will be to select sensor data for a set of sensors within a given timespan, I found that it would make sense to build the primary key out the the sensor id and the timestamp. In that particular order. 
 
