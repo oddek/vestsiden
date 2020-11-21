@@ -1,6 +1,6 @@
 # config/
 
-## Setup credential configs
+## Setup configuration files containing credentials
 
 Create a renamed copy of the files
 * [dummy_dbconfig.cpp](dummy_dbconfig.cpp)

@@ -22,35 +22,30 @@
 
 The purpose of this project is to transfer data from a database to another. 
 
-Data is gathered once per minute from 1499 unique sensors at Vestsiden lower secondary school in Kongsberg, Norway. This data is stored in a database which is not optimized for such a large volume. Along with each sensor reading, there is also stored a lot of excess data, which is of no interest to the reseachers making use of the data. 
+Data is gathered once per minute from 1499 unique sensors at Vestsiden lower secondary school in Kongsberg, Norway. This data is stored in a database which is not optimized for such a large volume. Along with each sensor reading, there is also stored a lot of excess data, which is of no interest to the researchers making use of the data. 
 
-At the time of writing(november 2020), this database constists of about 250 million rows, growing with 2.1 million rows every day. This database will throughout the project be refered to as the "dirty database".
+At the time of writing(november 2020), this database consists of about 250 million rows, growing with 2.1 million rows every day. This database will throughout the project be referred to as the "dirty database".
 
 ![Structure of dirty database](sql/img/dirtyDb.png?raw=true "Title")
 
 
-All of the sensor readings will continously be transfered to a new database, which is throughout the project refered to as the "clean database". The design for this database can be seen in the figure below:
+All of the sensor readings will continuously be transferred to a new database, which is throughout the project referred to as the "clean database". The design for this database can be seen in the figure below:
 
 
 ![Structure of clean database](sql/img/cleanDb.png?raw=true "Title")
 
-As the majority of queries executed on the database will be to select sensor data for a set of sensors within a given timespan, I found that it would make sense to build the primary key out the the sensor id and the timestamp. In that particular order. 
+As the majority of queries executed on the database will be to select sensor data for a set of sensors within a given timespan, I found that it would make sense to build the primary key out of the sensor id and the timestamp. In that particular order. 
 
 The complete project consists of software written in C++ as well as Bash scripts. 
 
 ### Built With
-This section should list any major frameworks that you built your project using. Leave any add-ons/plugins for the acknowledgements section. Here are a few examples.
-* [Bootstrap](https://getbootstrap.com)
-* [JQuery](https://jquery.com)
-* [Laravel](https://laravel.com)
-
-
+* [Boost](https://www.boost.org)
+* [MySQL Connector/C++ 1.1](https://dev.mysql.com/doc/connector-cpp/1.1/en/)
 
 <!-- GETTING STARTED -->
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project locally.
-To get a local copy up and running follow these simple example steps.
+To get a local copy up and running follow these steps.
 
 ### Prerequisites
 
@@ -72,7 +67,7 @@ First you need fill the contents of the files in config/, with credentials for t
 
 To create the database, use the [initDb.sh](bash/initDb.sh) script. Once created, run the script [updateSensors.sh](bash/updateSensors.sh), in order to extract all sensors from the dirty database, and insert them into the clean database. This script will run periodically, and has an ignore duplicates clause.
 
-The next step is do to bulk insertion of existing data from the dirty database, and into the new. As this process involves hundreds of millions of rows, this is done with MySQLs LOAD FILE functionality. Details can be found in the [readme](bash/README.MD) in the bash directory. 
+The next step is do to bulk insertion of existing data from the dirty database, and into the new. As this process involves hundreds of millions of rows, this is done with LOAD FILE functionality in MySQL. Details can be found in the [readme](bash/README.MD) in the bash directory. 
 
 After this, it is recommended to run the script [compareSizes.sh](bash/compareSizes.sh), in order to make sure that all the data has in fact been extracted from the old database, and inserted into the new. 
 
@@ -91,7 +86,8 @@ This will make the script run once every 12 hours.
 <!-- LICENSE -->
 ## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+To be decided
+> Distributed under the MIT License. See `LICENSE` for more information.
 
 
 

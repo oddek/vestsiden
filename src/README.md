@@ -33,7 +33,7 @@ Extracts all sensors from the dirty database, and inserts them into the new clea
 
 Retains the same primary key for each sensor in the clean database as in the dirty database. 
 
-Will be runned periodically to make sure that we dont try and insert sensordata for which no sensor exists.
+Will run periodically to make sure that we dont try and insert sensordata for which no sensor exists.
 
 Reasonably quick, but the insert ignore clause makes it slower than expected. 
 
