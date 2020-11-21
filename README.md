@@ -42,6 +42,9 @@ The complete project consists of software written in C++ as well as Bash scripts
 * [Boost](https://www.boost.org)
 * [MySQL Connector/C++ 1.1](https://dev.mysql.com/doc/connector-cpp/1.1/en/)
 
+##### Side note about the choice of version 1.1 of the MySQL C++ connector:
+It is generally recommended to use version 8 these days, however since version 1.1 is still maintained, much easier to install and the fact that I have only good previous experiences with this version, I chose to go for this version.
+
 <!-- GETTING STARTED -->
 ## Getting Started
 
@@ -67,7 +70,7 @@ First you need fill the contents of the files in config/, with credentials for t
 
 To create the database, use the [initDb.sh](bash/initDb.sh) script. Once created, it will also extract all sensors from the dirty database, and insert them into the clean database.
 
-The next step is do to bulk insertion of existing data from the dirty database, and into the new. As this process involves hundreds of millions of rows, this is done with the LOAD FILE functionality in MySQL. Details can be found in the [readme](bash/README.MD) in the bash directory. 
+The next step is do to bulk insertion of existing data from the dirty database, and into the new. As this process involves hundreds of millions of rows, this is done with the LOAD FILE functionality in MySQL. Details can be found in the [readme](bash/README.md) in the bash directory. 
 
 After this, it is recommended to run the script [compareSizes.sh](bash/compareSizes.sh), in order to make sure that all the data has in fact been extracted from the old database, and inserted into the new. 
 
