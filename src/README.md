@@ -27,7 +27,8 @@ Contains:
 * [Makefile](updateSensors/Makefile)
 
 Called by:
-* [updateSensors.sh](../bash/updateSensors.sh)
+* [initDb.sh](../bash/initDb.sh)
+* [periodicInsert.sh](../bash/periodicInsert.sh)
 
 Extracts all sensors from the dirty database, and inserts them into the new clean database.
 
