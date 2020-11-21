@@ -22,9 +22,9 @@
 
 The purpose of this project is to transfer data from a database to another. 
 
-Data is gathered once per minute from 1499 unique sensors at Vestsiden lower secondary school in Kongsberg, Norway. This data is stored in a database which is not optimized for such a large volume. Along with each sensor reading, there is also stored a lot of excess data, which is of no interest to the researchers making use of the data. 
+Data is gathered once per minute from 1499 unique sensors at Vestsiden lower secondary school in Kongsberg, Norway. This data is stored in a database which is not optimized for such a large volume. Along with each sensor reading, there is also stored a lot of excess data which is of no interest to the researchers making use of the data. 
 
-At the time of writing(november 2020), this database consists of about 250 million rows, growing with 2.1 million rows every day. This database will throughout the project be referred to as the "dirty database".
+At the time of writing(November 2020), this database consists of about 250 million rows, growing with 2.1 million rows every day. This database will throughout the project be referred to as the "dirty database".
 
 ![Structure of dirty database](sql/img/dirtyDb.png?raw=true "Title")
 
@@ -65,9 +65,9 @@ apt install libmysqlcppconn-dev
 
 First you need fill the contents of the files in config/, with credentials for the old and the new database. Detailed instructions can be found in the corresponding [readme](config/README.md). In the same directory you can also find the [my.cnf](config/my.cnf) file, which contains settings for MySQL.
 
-To create the database, use the [initDb.sh](bash/initDb.sh) script. Once created, run the script [updateSensors.sh](bash/updateSensors.sh), in order to extract all sensors from the dirty database, and insert them into the clean database. This script will run periodically, and has an ignore duplicates clause.
+To create the database, use the [initDb.sh](bash/initDb.sh) script. Once created, it will also extract all sensors from the dirty database, and insert them into the clean database.
 
-The next step is do to bulk insertion of existing data from the dirty database, and into the new. As this process involves hundreds of millions of rows, this is done with LOAD FILE functionality in MySQL. Details can be found in the [readme](bash/README.MD) in the bash directory. 
+The next step is do to bulk insertion of existing data from the dirty database, and into the new. As this process involves hundreds of millions of rows, this is done with the LOAD FILE functionality in MySQL. Details can be found in the [readme](bash/README.MD) in the bash directory. 
 
 After this, it is recommended to run the script [compareSizes.sh](bash/compareSizes.sh), in order to make sure that all the data has in fact been extracted from the old database, and inserted into the new. 
 
@@ -79,15 +79,15 @@ crontab -e
 
 and insert this line at the bottom of the file:
 ```
-*/10 * * * * kent /PATH/TO/PROJECT/ROOT/bash/periodicDbInsert.sh
+* 5,17 * * * kent /PATH/TO/PROJECT/ROOT/bash/periodicDbInsert.sh
 ```
-This will make the script run once every 12 hours. 
+This will make the script run once every 12 hours, at 05:00 and 17:00.
 
 <!-- LICENSE -->
 ## License
 
 To be decided
-> Distributed under the MIT License. See `LICENSE` for more information.
+<!-- Distributed under the MIT License. See `LICENSE` for more information. -->
 
 
 
