@@ -6,7 +6,8 @@ int main()
     Tee tee(std::cout, logFile);
     TeeStream log(tee);
 
-	std::cout << "test";
+	auto i = getInsertUpperLimit();
+	log << i << "\n";
 	return 0;
 
 	const std::string filename = "../../loadfiles/readings19Nov.csv";
@@ -26,8 +27,8 @@ int main()
 		log << "Got lower limit for file:\n";
 		printTimeFromMillis(totalInsertLowerLimit, log);
 		//Ten minutes ago at runtime
-		/* const uint64_t totalInsertUpperLimit = getEpochUpperLimit(); */
-		const uint64_t totalInsertUpperLimit = 1605657600000;//getEpochUpperLimit();
+		/* const uint64_t totalInsertUpperLimit = getInsertUpperLimit(); */
+		const uint64_t totalInsertUpperLimit = 1605657600000;
 		log << "Got upper limit for file:\n";
 		printTimeFromMillis(totalInsertUpperLimit, log);
 		/* const uint64_t totalInsertUpperLimit = getEpochUpperLimit(); */

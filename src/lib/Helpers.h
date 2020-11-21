@@ -59,8 +59,11 @@ int insertCleanDataInFile(std::vector<Entry> data, std::string filename, std::ma
 int insertCleanData(std::unique_ptr<sql::Connection>& cleanCon, std::vector<Entry> data, std::map<std::string, int> sensors);
 
 
-//Returns time 10 minutes ago in millis
-uint64_t getEpochUpperLimit();
+//Returns time 24 hours ago in millis, will be a whole second
+uint64_t getInsertUpperLimit();
+
+//Returns highest timestamp in cleanDb plus one second, in millis
+uint64_t getInsertLowerLimit(std::unique_ptr<sql::Connection>& cleanCon);
 
 //Returns entry with highest timestamp from cleandb
 //If no entries exits, we return 0
