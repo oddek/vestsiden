@@ -4,10 +4,12 @@
 
 int main()
 {
+
     std::ofstream logFile("status.log", std::fstream::app);
     Tee tee(std::cout, logFile);
     TeeStream log(tee);
 
+	log << "NEW LOG INSERT!\n" << std::flush;
 	//Set the max time interval for each select statement
 	const int minuteFetchIncrement = 60;
 	try
@@ -19,12 +21,12 @@ int main()
 		cleanCon->setSchema("vestsiden");
 
 		//Earliest sensor reading in dirty db
-		/* const uint64_t totalInsertLowerLimit = getInsertLowerLimit(cleanCon); */
-		const uint64_t totalInsertLowerLimit = 1605657541000;//getInsertLowerLimit(cleanCon);
+		const uint64_t totalInsertLowerLimit = getInsertLowerLimit(cleanCon);
+		/* const uint64_t totalInsertLowerLimit = 1605657541000;//getInsertLowerLimit(cleanCon); */
 
 		if(totalInsertLowerLimit == 0)
 		{
-			log << "Lower timestamp from clean db is equal to 0. Use bulk insert instead";
+			log << "Lower timestamp from clean db is equal to 0. Use bulk insert instead\n";
 			return 0;
 		}
 
@@ -50,6 +52,7 @@ int main()
 
 		int totalLinesWritten = 0;
 
+		log << "Starting fetch and insert.." << std::flush;
 		//Loop until the file has been filled with all rows from dirty db
 		while(currentLower < totalInsertUpperLimit)
 		{
@@ -78,7 +81,7 @@ int main()
 			auto t2 = std::chrono::high_resolution_clock::now();
 			auto duration = std::chrono::duration_cast<std::chrono::seconds>( t2 - t1 ).count();
 			log << "Iteration took: " << duration << "seconds\n";
-			log << "Total lines written: " << totalLinesWritten << "\n";
+			log << "Total lines written: " << totalLinesWritten << "\n" << std::flush;
 		}
 		log << "Done, cleaning up..\n";
 	}
@@ -89,9 +92,9 @@ int main()
 	    log << "# ERR: " << e.what();
 	    log << " (MySQL error code: " << e.getErrorCode();
 	    log << ", SQLState: " << e.getSQLState() << " )" << std::endl;
-		log << "Exit on error";
+		log << "Exit on error\n\n\n";
 		return -1;
 	}
-	log << "Clean exit\n";
+	log << "Clean exit\n\n\n";
 	return 0;
 }

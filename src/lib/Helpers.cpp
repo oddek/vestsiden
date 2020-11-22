@@ -58,7 +58,7 @@ int insertCleanData(std::unique_ptr<sql::Connection>& cleanCon, std::vector<Entr
 	}
 	//Erase the last redundant comma and space
 	query.erase(query.length()-2);
-	//Create statement
+		//Create statement
 	std::unique_ptr<sql::Statement> stmt(cleanCon->createStatement());
 	//Perform query
 	stmt->execute(query);
