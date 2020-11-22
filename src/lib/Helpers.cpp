@@ -141,7 +141,7 @@ uint64_t getLastEntryTimestamp(std::unique_ptr<sql::Connection>& cleanCon)
 		lastEntry  = res->getUInt64("LastEntry");
 	}
 	//CleanDB holds seconds, we want millis
-	return seconds_to_millis(lastEntry);
+	return seconds_to_millis(lastEntry + 1);
 }
 
 void printTimeFromMillis(uint64_t epochMillis, TeeStream& log)
