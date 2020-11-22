@@ -110,16 +110,25 @@ std::map<std::string, int> getSensorMap(std::unique_ptr<sql::Connection>& cleanC
 }
 
 
-uint64_t getEpochUpperLimit()
+uint64_t getInsertUpperLimit()
 {
 	//Get time
 	auto t = std::chrono::system_clock::now();
 	//Convert to millis and uint32
-	uint64_t limit = std::chrono::duration_cast<std::chrono::milliseconds>(t.time_since_epoch()).count();
+	uint64_t limit = std::chrono::duration_cast<std::chrono::seconds>(t.time_since_epoch()).count();
 
-	limit -= 24*60*60*1000;
+	//Substract 24 hours
+	limit -= 24*60*60;
 
-	return limit;
+	return seconds_to_millis(limit);
+}
+
+uint64_t getInsertLowerLimit(std::unique_ptr<sql::Connection>& cleanCon)
+{
+	//Get last entry of cleandb in millis
+	uint64_t lastEntry =  getLastEntryTimestamp(cleanCon);
+	//Add one second to it, so that we wont try and fetch an already existing row
+	return lastEntry + 1000;
 }
 
 uint64_t getLastEntryTimestamp(std::unique_ptr<sql::Connection>& cleanCon)

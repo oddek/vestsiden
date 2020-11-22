@@ -2,10 +2,12 @@ config/*
 !config/dummy_dbconfig.cpp
 !config/dummy_newDb.conf
 !config/dummy_oldDb.conf
-!config/sql.cnf
+!config/my.cnf
+!config/README.md
 docs*
 docs/
 loadfiles/*
+!loadfiles/README.md
 src/lib/Helpers.o
 src/periodicInsert/fill
 src/periodicInsert/main.o

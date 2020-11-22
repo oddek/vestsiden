@@ -19,8 +19,9 @@ int main()
 		cleanCon->setSchema("vestsiden");
 
 		//Earliest sensor reading in dirty db
-		/* const uint64_t totalInsertLowerLimit = getLastEntryTimestamp(cleanCon); */
-		const uint64_t totalInsertLowerLimit =1605657541000; //getLastEntryTimestamp(cleanCon);
+		/* const uint64_t totalInsertLowerLimit = getInsertLowerLimit(cleanCon); */
+		const uint64_t totalInsertLowerLimit = 1605657541000;//getInsertLowerLimit(cleanCon);
+
 		if(totalInsertLowerLimit == 0)
 		{
 			log << "Lower timestamp from clean db is equal to 0. Use bulk insert instead";
@@ -30,7 +31,7 @@ int main()
 		log << "Got lower limit for file:\n";
 		printTimeFromMillis(totalInsertLowerLimit, log);
 		//Ten minutes ago at runtime
-		const uint64_t totalInsertUpperLimit = getEpochUpperLimit();
+		const uint64_t totalInsertUpperLimit = getInsertUpperLimit();
 		log << "Got upper limit for file:\n";
 		printTimeFromMillis(totalInsertUpperLimit, log);
 
@@ -67,7 +68,7 @@ int main()
 			currentLower = currentUpper;
 			currentUpper += incrementValue;
 
-			//We dont want to read more than what was there ten minutes ago
+			//We dont want to read more than the total limit
 			if(currentUpper > totalInsertUpperLimit)
 			{
 				currentUpper = totalInsertUpperLimit;

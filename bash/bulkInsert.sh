@@ -1,4 +1,10 @@
 #!/bin/bash
+
+# Generate loadfile
+# ../src/readingFileGen/readingFileGen
+
+
+#Necessary as there isn't enough space on local harddrive to sort file
 # export TMPDIR=/mnt/mysqldb/extHome/tmp
 #echo 'About to sort readings.csv'
 ###sort file based on two first columns(timestamp and sensorid)
