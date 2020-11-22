@@ -7,11 +7,9 @@ int main()
     std::ofstream logFile("status.log", std::fstream::app);
     Tee tee(std::cout, logFile);
     TeeStream log(tee);
-	return 0;
 
-	const std::string filename = "../../loadfiles/readings2.csv";
 	//Set the max time interval for each select statement
-	const int minuteFetchIncrement = 30;
+	const int minuteFetchIncrement = 60;
 	try
 	{
 		sql::Driver* driver = get_driver_instance();
@@ -21,7 +19,8 @@ int main()
 		cleanCon->setSchema("vestsiden");
 
 		//Earliest sensor reading in dirty db
-		const uint64_t totalInsertLowerLimit = getLastEntryTimestamp(cleanCon);
+		/* const uint64_t totalInsertLowerLimit = getLastEntryTimestamp(cleanCon); */
+		const uint64_t totalInsertLowerLimit =1605657541000; //getLastEntryTimestamp(cleanCon);
 		if(totalInsertLowerLimit == 0)
 		{
 			log << "Lower timestamp from clean db is equal to 0. Use bulk insert instead";
