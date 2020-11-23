@@ -3,25 +3,21 @@
 configPath=$(pwd)/../config
 
 SECONDS=0
-maxTimestamp=`mysql --defaults-extra-file=$configPath/newDb.conf -s -N -e "
-  SELECT MAX(TIMESTAMP) FROM HISTORYNUMERICTRENDRECORD;"`
-echo 'Took ' $SECONDS's'
-  
-echo 'Highest timestamp found in new db: ' $maxTimestamp 
-maxMillis=$((($maxTimeStamp + 1) * 1000))
+oldSize=`mysql --defaults-extra-file=$configPath/oldDb.conf -s -N -e "
+  SELECT table_schema vestsiden,
+          ROUND(SUM(data_length + index_length) / 1024 / 1024, 1) 'DB Size in MB' 
+  FROM information_schema.tables 
+  GROUP BY table_schema;"` 
 
-echo 'Highest timestamp found in millis: ' $maxMillis
+echo 'Took ' $SECONDS's'
+echo 'Size of old db: ' $oldSize 
 
 SECONDS=0
-oldCount=`mysql --defaults-extra-file=$configPath/oldDb.conf -e "
-  SELECT COUNT(*) from HISTORYNUMERICTRENDRECORD WHERE TIMESTAMP < '$maxMillis';"`
+newSize=`mysql --defaults-extra-file=$configPath/newDb.conf -s -N -e "
+  SELECT table_schema vestsiden,
+          ROUND(SUM(data_length + index_length) / 1024 / 1024, 1) 'DB Size in MB' 
+  FROM information_schema.tables 
+  GROUP BY table_schema;"` 
+
 echo 'Took ' $SECONDS's'
-
-echo 'OldCount: ' $oldCount
-
-SECONDS=0
-newCount=`mysql --defaults-extra-file=$configPath/newDb.conf -e "
-  SELECT COUNT(*) from HISTORYNUMERICTRENDRECORD;"`
-echo 'Took ' $SECONDS's'
-
-echo 'NewCount: ' $newCount
+echo 'Size of new db: ' $newSize 

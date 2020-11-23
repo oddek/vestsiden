@@ -3,9 +3,9 @@
 
 configPath=$(pwd)/../config
 
-maxTimeStamp=1605657600
+maxTimeStamp=1605976680
 
-maxMillis=$(($maxTimeStamp * 1000))
+maxMillis=$((($maxTimeStamp + 1) * 1000))
 
 echo $maxMillis
 
