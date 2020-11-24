@@ -135,10 +135,15 @@ uint64_t getLastEntryTimestamp(std::unique_ptr<sql::Connection>& cleanCon)
 {
 	//Get max timestamp from clean db, if empty return 0
 	std::string query =
-		"SELECT "
-			"COALESCE(MAX(TIMESTAMP), 0) as 'LastEntry' "
+	  "SELECT "
+		"MAX(max_ts) AS LastEntry "
+	  "FROM "
+		"(SELECT "
+		  "HISTORY_ID, MAX(TIMESTAMP) AS max_ts "
 		"FROM "
-			"HISTORYNUMERICTRENDRECORD";
+		  "HISTORYNUMERICTRENDRECORD "
+		"GROUP BY "
+		  "HISTORY_ID) AS max_res";
 
 	//Create stmt and perform query
 	std::unique_ptr<sql::Statement> stmt(cleanCon->createStatement());

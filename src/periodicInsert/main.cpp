@@ -5,7 +5,7 @@
 int main()
 {
 
-    std::ofstream logFile("status.log", std::fstream::app);
+    std::ofstream logFile("/mnt/mysqldb/extHome/vestsiden/src/periodicInsert/status.log", std::fstream::app);
     Tee tee(std::cout, logFile);
     TeeStream log(tee);
 
