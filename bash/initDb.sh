@@ -1,13 +1,15 @@
 #!/bin/bash 
 
-configPath=$.(pwd)/../config
-sqlScriptPath=$(pwd)/../sql
-updateSensorTablePath=$(pwd)/../src/updateSensors
+CURDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+configPath=${CURDIR}/../config
+loadfilesPath=${CURDIR}/../loadfiles
+srcPath=${CURDIR}/../src
+sqlPath=${CURDIR}/../sql
 
 echo 'Creating Database..'
-mysql --defaults-extra-file=$configPath/newDb.conf -s -N -e "
-  source $sqlScriptPath/initDb.sql"
+mysql --defaults-extra-file=${configPath}/newDb.conf -s -N -e "
+  source ${sqlScriptPath}/initDb.sql"
 
 echo 'Inserting sensors..'
-../src/updateSensors/updateSensors
+${srcPath}/updateSensors/updateSensors
 

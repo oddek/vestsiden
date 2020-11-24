@@ -1,10 +1,11 @@
 
 #!/bin/bash
 
-configPath=$(pwd)/../config
+CURDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+configPath=${CURDIR}/../config
 
 SECONDS=0
-newCount=`mysql --defaults-extra-file=$configPath/newDb.conf -e "
+newCount=`mysql --defaults-extra-file=${configPath}/newDb.conf -e "
   SELECT * from HISTORYNUMERICTRENDRECORD where HISTORY_ID = 2 AND TIMESTAMP > 1602772691 and TIMESTAMP < 1605451091;"`
 
 echo 'NewCount: ' $newCount
