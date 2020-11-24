@@ -4,7 +4,7 @@ CURDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 configPath=${CURDIR}/../config
 
 #Printing size of databases in MBs
-${CURDIR}/getDbSizes.sh
+${CURDIR}/helpers/getDbSizes.sh
 
 
 
@@ -26,11 +26,11 @@ echo 'Took ' $SECONDS's'
 echo 'Highest timestamp found in new db: ' $maxTimestamp 
 
 #Getting count in old database up to maxTimestamp
-${CURDIR}/getOldCount.sh $maxTimestamp &
+${CURDIR}/helpers/getOldCount.sh $maxTimestamp &
 pid1=$!
 
 #Getting total count in new database
-${CURDIR}/getNewCount.sh &
+${CURDIR}/helpers/getNewCount.sh &
 pid2=$!
 
 wait $pid1 && echo "getOldCount exited normally" || echo "getOldCount exited abnormally with status $?"
