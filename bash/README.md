@@ -33,10 +33,16 @@ Meant to be run periodically as a cronjob.
 
 Recommended interval is 12 hours.
 
-Takes about XXX hours
+Uses about 30 seconds per 90 000 rows which is about one hour worth of data. 
 
-## compareSizes.sh
+## compareDatabases.sh
 
-Find highest timestamp of new database, and prints the number of rows in both of the databases up to that point. 
+Find the size of both databases in MBs, prints them.
 
-Takes about 3-4 hours. 
+Finds highest timestamp of new database, and prints the number of rows in both of the databases up to that point. 
+
+Takes about 2 hours. 
+
+## helpers/
+
+A small collection of helper scripts, used by scripts in this folder
