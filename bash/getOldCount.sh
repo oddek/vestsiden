@@ -3,11 +3,11 @@
 
 configPath=$(pwd)/../config
 
-maxTimeStamp=1605976680
+maxTimeStamp=$1
 
 maxMillis=$((($maxTimeStamp + 1) * 1000))
 
-echo $maxMillis
+echo 'OldCount using ' $maxMillis
 
 SECONDS=0
 oldCount=`mysql --defaults-extra-file=$configPath/oldDb.conf -e "
