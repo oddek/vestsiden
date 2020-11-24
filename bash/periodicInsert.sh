@@ -1,5 +1,7 @@
 #!/bin/bash
 
+SECONDS=0
 echo 'Starting periodicFiller'
-# ../src/periodicInsert/fill
+/mnt/mysqldb/extHome/vestsiden/src/periodicInsert/fill
+echo 'Took ' $SECONDS's'
 echo 'Done'
