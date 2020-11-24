@@ -92,4 +92,8 @@ void printTimeFromSeconds(uint64_t epoch, TeeStream& log);
 
 bool sensorEntrySort(const SensorEntry& a, const SensorEntry& b);
 
+std::string getLogPath();
+
+void logCurrentTime(TeeStream& log);
+
 #endif

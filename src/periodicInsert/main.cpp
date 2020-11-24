@@ -1,15 +1,16 @@
 #include "../lib/Helpers.h"
 
-//SORTER ENTRYVECTOR FØR VI SETTER INN
-
 int main()
 {
 
-    std::ofstream logFile("/mnt/mysqldb/extHome/vestsiden/src/periodicInsert/status.log", std::fstream::app);
+	std::cout << getLogPath() << "\n";
+    std::ofstream logFile(getLogPath() + "/status.log", std::fstream::app);
     Tee tee(std::cout, logFile);
     TeeStream log(tee);
 
 	log << "NEW LOG INSERT!\n" << std::flush;
+	logCurrentTime(log);
+
 	//Set the max time interval for each select statement
 	const int minuteFetchIncrement = 60;
 	try
@@ -92,9 +93,12 @@ int main()
 	    log << "# ERR: " << e.what();
 	    log << " (MySQL error code: " << e.getErrorCode();
 	    log << ", SQLState: " << e.getSQLState() << " )" << std::endl;
+		logCurrentTime(log);
 		log << "Exit on error\n\n\n";
 		return -1;
 	}
+
+	logCurrentTime(log);
 	log << "Clean exit\n\n\n";
 	return 0;
 }

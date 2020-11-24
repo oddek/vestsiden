@@ -2,15 +2,17 @@
 
 int main()
 {
-    std::ofstream logFile("status.log", std::fstream::app);
+	std::cout << getLogPath() << "\n";
+    std::ofstream logFile(getLogPath() + "/status.log", std::fstream::app);
     Tee tee(std::cout, logFile);
     TeeStream log(tee);
 
-	auto i = getInsertUpperLimit();
-	log << i << "\n";
+	log << "NEW LOG INSERT!\n" << std::flush;
+	logCurrentTime(log);
+
 	return 0;
 
-	const std::string filename = "../../loadfiles/readings19Nov.csv";
+	const std::string filename = getLogPath() + "../../loadfiles/readings19Nov.csv";
 	//Set the max time interval for each select statement
 	const int hourlyFetchIncrement = 12;
 
@@ -88,8 +90,10 @@ int main()
 	    log << " (MySQL error code: " << e.getErrorCode();
 	    log << ", SQLState: " << e.getSQLState() << " )" << std::endl;
 		log << "Exit on error";
+		logCurrentTime(log);
 		return -1;
 	}
+	logCurrentTime(log);
 	log << "Clean exit\n";
 	return 0;
 }

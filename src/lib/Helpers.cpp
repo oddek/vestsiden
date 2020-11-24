@@ -283,3 +283,25 @@ bool sensorEntrySort(const SensorEntry& a, const SensorEntry& b)
 {
 	return a.id < b.id;
 }
+
+
+std::string getLogPath()
+{
+	//Get path of executable
+	char result[ PATH_MAX ];
+	ssize_t count = readlink( "/proc/self/exe", result, PATH_MAX );
+	std::string s( result, (count > 0) ? count : 0 );
+
+	//Find position of last /
+	size_t pos = s .find_last_of('/', s.size());
+	//Erase name of executable and last slash, so we are left with only the path to the current dir
+	s.erase(pos, s.size() - pos);
+	return s;
+}
+
+void logCurrentTime(TeeStream& log)
+{
+	auto start = std::chrono::system_clock::now();
+	std::time_t start_time = std::chrono::system_clock::to_time_t(start);
+	log << "Time: " << std::ctime(&start_time) << "\n" << std::flush;
+}

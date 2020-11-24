@@ -2,10 +2,14 @@
 
 int main()
 {
-    std::ofstream logFile("status.log", std::fstream::app);
+	std::cout << getLogPath() << "\n";
+    std::ofstream logFile(getLogPath() + "/status.log", std::fstream::app);
     Tee tee(std::cout, logFile);
     TeeStream log(tee);
-	log << "log";
+
+	log << "NEW LOG INSERT!\n" << std::flush;
+	logCurrentTime(log);
+
 	return 0;
 	try
 	{
@@ -29,8 +33,10 @@ int main()
 	    log << " (MySQL error code: " << e.getErrorCode();
 	    log << ", SQLState: " << e.getSQLState() << " )" << std::endl;
 		log << "Exit on error";
+		logCurrentTime(log);
 		return -1;
 	}
+	logCurrentTime(log);
 	log << "Clean exit\n";
 	return 0;
 }
