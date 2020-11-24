@@ -70,7 +70,7 @@ To create the database, use the [initDb.sh](bash/initDb.sh) script. Once created
 
 The next step is do to bulk insertion of existing data from the dirty database, and into the new. As this process involves hundreds of millions of rows, this is done with the LOAD FILE functionality in MySQL. Details can be found in the [readme](bash/README.md) in the bash directory. 
 
-After this, it is recommended to run the script [compareSizes.sh](bash/compareSizes.sh), in order to make sure that all the data has in fact been extracted from the old database, and inserted into the new. 
+After this, it is recommended to run the script [compareDatabases.sh](bash/compareDatabases.sh), in order to make sure that all the data has in fact been extracted from the old database, and inserted into the new. This will also compare the size of the databases in MB.
 
 At this point, you will most likely want to set up a cronjob, to execute the script [periodicInsert.sh](bash/periodicInsert.sh) at a regular interval. To do this, open up the cronjob config file with this command:
 
