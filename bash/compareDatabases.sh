@@ -1,16 +1,15 @@
 #!/bin/bash
 
+#paths
 CURDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 configPath=${CURDIR}/../config
 
 #Printing size of databases in MBs
 ${CURDIR}/helpers/getDbSizes.sh
 
-
-
-SECONDS=0
 #Quicker way to get max timestamp from new database
 #Collects the highest timestamp from each sensor, and then selects the max value from those. 
+SECONDS=0
 maxTimestamp=`mysql --defaults-extra-file=$configPath/newDb.conf -s -N -e "
   SELECT 
     MAX(max_ts) 
@@ -21,9 +20,11 @@ maxTimestamp=`mysql --defaults-extra-file=$configPath/newDb.conf -s -N -e "
       HISTORYNUMERICTRENDRECORD
     GROUP BY
       HISTORY_ID) AS max_set;"`
-
 echo 'Took ' $SECONDS's'
+
 echo 'Highest timestamp found in new db: ' $maxTimestamp 
+
+# These scripts are executing concurrently:
 
 #Getting count in old database up to maxTimestamp
 ${CURDIR}/helpers/getOldCount.sh $maxTimestamp &

@@ -1,10 +1,16 @@
 #!/bin/bash
 
+inputLoadFile="readings.csv"
+sortedLoadFile="readingsSorted.csv"
+splitFile="readingPart"
+
 #paths
 CURDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 configPath=${CURDIR}/../config
 loadfilesPath=${CURDIR}/../loadfiles
+splitfilePath=${loadfilesPath}/readingSplit
 srcPath=${CURDIR}/../src
+
 # Generate loadfile
 ${srcPath}/readingFileGen/readingFileGen
 
@@ -15,19 +21,19 @@ echo 'About to sort readings.csv'
 # sort file based on two first columns(timestamp and sensorid)
 SECONDS=0
 
-sort -t, -k 1,1n -k 2,2n ${loadfilesPath}/readings19Nov.csv > ${loadfilesPath}/readingsSorted.csv
+sort -t, -k 1,1n -k 2,2n ${loadfilesPath}/${inputLoadFile} > ${loadfilesPath}/${sortedLoadFile}
 echo 'Sort took ' $SECONDS's'
 
 echo 'Sorting complete, starting to split..'
 
 # split into files of max a million, read1.csv, read2.csv...
 SECONDS=0
-split -dl 1000000 --additional-suffix=.csv ${loadfilesPath}/readingsSorted.csv ${loadfilesPath}/readingSplit/readingPart
+split -dl 1000000 --additional-suffix=.csv ${loadfilesPath}/${sortedLoadFile} ${splitfilePath}/${splitFile}
 echo 'Split took ' $SECONDS's'
 
 echo 'Split complete\nStarting to load files..'
 
-for f in ${loadfilesPath}/readingSplit/readingPart* 
+for f in ${splitfilePath}/${splitFile}* 
 do
   SECONDS=0
   echo 'loading file ' $f
