@@ -8,7 +8,7 @@ SRC = $(wildcard *.cpp) \
 OBJ = $(SRC:.cpp=.o)
 LDFLAGS = -lmysqlcppconn
 
-all: build run
+all: build
 run:
 	./$(PROG) 
 
