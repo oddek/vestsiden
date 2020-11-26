@@ -80,7 +80,7 @@ crontab -e
 
 and insert this line at the bottom of the file:
 ```
-* 5,17 * * * <USER> /PATH/TO/PROJECT/ROOT/bash/periodicDbInsert.sh
+* 5,17 * * * /PATH/TO/PROJECT/ROOT/bash/periodicDbInsert.sh
 ```
 This will make the script run once every 12 hours, at 05:00 and 17:00.
 
