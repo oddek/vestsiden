@@ -87,7 +87,7 @@ This will make the script run once every 12 hours, at 05:00 and 17:00.
 <!-- LICENSE -->
 ## License
 
-Distributed under the MIT License. See [`LICENSE`](LICENCE) for more information.
+Distributed under the MIT License. See [`LICENSE`](LICENSE) for more information.
 
 <!-- CONTACT -->
 ## Contact
