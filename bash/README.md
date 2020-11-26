@@ -23,7 +23,7 @@ Inserts all rows into new database.
 
 As these operations are very time-consuming, they are not automatically deleted.
 
-All files are stored in the loadfiles/ directory]
+All files are stored in the loadfiles/ directory
 
 ## periodicInsert.sh
 
@@ -45,4 +45,4 @@ Takes about 2 hours.
 
 ## helpers/
 
-A small collection of helper scripts, used by scripts in this folder
+A small collection of helper scripts, used by scripts in this folder.
