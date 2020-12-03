@@ -38,6 +38,12 @@ std::vector<Entry> getLatestDirtyData(std::unique_ptr<sql::Connection>& dirtyCon
 
 int insertCleanData(std::unique_ptr<sql::Connection>& cleanCon, std::vector<Entry> data, std::map<std::string, int> sensors)
 {
+	//If data is empty, we return immediately.
+	//Else the empty insert will give an error
+	if(data.empty())
+	{
+		return 0;
+	}
 	//Start of query
 	std::string query =
 		"INSERT INTO `HISTORYNUMERICTRENDRECORD` "
