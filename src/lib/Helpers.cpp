@@ -54,7 +54,17 @@ int insertCleanData(std::unique_ptr<sql::Connection>& cleanCon, std::vector<Entr
 	for(auto c : data)
 	{
 		//Translate sensorName to sensorId
-		int sensorId = sensors.at(c.sensorName);
+		auto sensorSearch = sensors.find(c.sensorName);
+		int sensorId;
+		if(sensorSearch != sensors.end())
+		{
+			sensorId = sensorSearch->second;
+		}
+		else
+		{
+			continue;
+		}
+		sensorId = sensors.at(c.sensorName);
 
 		query += "(";
 		query += std::to_string(millis_to_seconds(c.timestamp)) + ", ";
