@@ -12,7 +12,8 @@ echo 'OldCount using ' $maxMillis
 
 SECONDS=0
 oldCount=`mysql --defaults-extra-file=$configPath/oldDb.conf -e "
-  SELECT COUNT(*) as OldCount from HISTORYNUMERICTRENDRECORD WHERE TIMESTAMP < '$maxMillis';"`
+  SELECT COUNT(*) as OldCount from HISTORYNUMERICTRENDRECORD WHERE TIMESTAMP < '$maxMillis' AND HISTORY_ID IS NOT NULL;"`
+
 
 echo 'Took ' $SECONDS's'
 echo 'OldCount: ' $oldCount
