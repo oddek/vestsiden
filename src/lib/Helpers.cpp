@@ -64,7 +64,6 @@ int insertCleanData(std::unique_ptr<sql::Connection>& cleanCon, std::vector<Entr
 		{
 			continue;
 		}
-		sensorId = sensors.at(c.sensorName);
 
 		query += "(";
 		query += std::to_string(millis_to_seconds(c.timestamp)) + ", ";
